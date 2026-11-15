@@ -1,0 +1,28 @@
+{
+  "name": "motor-criativos-lowticket",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Motor de criativos em vídeo para produtos low ticket: a ficha do produto gera roteiros, cenas, legendas e vídeos em lote.",
+  "scripts": {
+    "roteiros": "tsx motor/roteiros.ts",
+    "render": "tsx motor/render.ts",
+    "conferir": "tsx motor/conferir.ts",
+    "studio": "remotion studio src/index.ts",
+    "tipos": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@remotion/cli": "^4.0.543",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.543"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.31",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

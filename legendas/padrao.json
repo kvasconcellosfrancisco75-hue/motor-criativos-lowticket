@@ -1,0 +1,6 @@
+{
+  "texto": "{{angulo.legenda_gancho}}\n\nO {{produto.nome}} reúne {{produto.entregaveis.resumo}}. {{produto.entregaveis.detalhe}}\n\n{{produto.como_usar}}\n\n{{produto.oferta.resumo}}",
+  "titulo": "{{produto.titulo_anuncio}}",
+  "descricao": "{{produto.oferta.descricao}}",
+  "botao": "{{produto.cta.botao}}"
+}

@@ -1,0 +1,6 @@
+node_modules
+saida
+*.log
+.DS_Store
+# produtos reais ficam fora do repositório público
+produtos-privados

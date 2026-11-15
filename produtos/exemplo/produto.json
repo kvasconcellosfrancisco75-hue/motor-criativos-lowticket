@@ -1,0 +1,72 @@
+{
+  "id": "exemplo-receitas",
+  "nome": "Pack de Receitas em 15 Minutos",
+  "marca": "Exemplo Lab",
+  "pagina": "https://exemplo.com/pack-receitas",
+  "observacao": "Produto FICTÍCIO, só para demonstrar o motor. Troque por um produto real numa pasta fora deste repositório.",
+  "teto_segundos": 30,
+  "formatos": ["9x16", "4x5"],
+  "formulas": ["dor-situacao-solucao-cta", "numero-lista-oferta"],
+
+  "publico": "pessoas que trabalham fora e querem comer melhor sem passar horas na cozinha",
+  "promessa": "receitas prontas em até 15 minutos, com lista de compras",
+  "restricoes": ["não prometer emagrecimento nem resultado de saúde", "sem antes e depois", "sem depoimento de resultado"],
+
+  "mecanismo": {
+    "fala": "Pensando nisso, a Exemplo Lab testou mais de duzentas receitas e separou as mais rápidas para você.",
+    "linhas": ["Pensando nisso,", "a Exemplo Lab", "separou as mais rápidas."]
+  },
+  "entregaveis": {
+    "quantidade": 120,
+    "antes": "São mais de",
+    "unidade_frase": "receitas prontas.",
+    "marca": "prontas.",
+    "fala": "São mais de cento e vinte receitas prontas.",
+    "titulo_itens": "Cada receita traz",
+    "itens": ["Lista de compras", "Passo a passo", "Tempo e porções"],
+    "fala_itens": "Cada receita traz a lista de compras, o passo a passo e o tempo de preparo.",
+    "resumo": "mais de 120 receitas prontas em até 15 minutos",
+    "detalhe": "Cada uma traz a lista de compras, o passo a passo e o tempo de preparo."
+  },
+  "diferencial": { "fala": "Sem precisar de experiência na cozinha.", "linhas": ["Sem precisar de", "experiência."], "marca": "experiência." },
+  "como_usar": "É só escolher a receita, separar os ingredientes e preparar.",
+  "slogan": { "fala": "Escolhe, prepara e aproveita.", "palavras": ["Escolhe.", "Prepara.", "E aproveita."] },
+  "oferta": {
+    "valor": 27,
+    "moeda": "R$",
+    "de": "R$ 67",
+    "selos": ["Pagamento único", "Garantia de 7 dias"],
+    "fala": "Tudo por vinte e sete reais, com sete dias de garantia.",
+    "resumo": "R$27 em pagamento único. Acesso vitalício e garantia de 7 dias.",
+    "descricao": "Pagamento único • Acesso vitalício • Garantia de 7 dias"
+  },
+  "titulo_anuncio": "+120 receitas prontas em 15 minutos",
+  "cta": {
+    "fala": "Quer comer melhor sem perder tempo? Toque em Saiba Mais.",
+    "pergunta": ["Quer comer", "melhor", "sem perder tempo?"],
+    "complemento": [],
+    "marca": "melhor",
+    "botao": "Saiba Mais"
+  },
+
+  "visual": {
+    "cores": { "claro": "#FFF7EE", "escuro": "#3B1F4A", "destaque": "#FFB547", "texto": "#24122E" },
+    "fontes": { "titulo": "Bricolage Grotesque", "citacao": "Instrument Serif" }
+  },
+  "personagem": {},
+  "ativos": { "prova_video": "" },
+
+  "angulos": [
+    {
+      "id": "tempo",
+      "dor": "falta de tempo e de ideia para cozinhar",
+      "legenda_gancho": "Você não precisa passar horas na cozinha para comer bem.",
+      "ganchos": [
+        { "texto": "Você chega em casa cansado e não sabe o que comer.", "linhas": ["Chegou cansado", "e não sabe", "o que comer?"], "marca": "cansado" },
+        { "texto": "Você passa mais tempo decidindo o que cozinhar do que cozinhando.", "linhas": ["Mais tempo", "decidindo do que", "cozinhando?"], "marca": "decidindo" }
+      ],
+      "promessa": { "fala": "Toda semana você jura: segunda eu começo.", "antes": "Toda semana você jura:", "citacao": "Segunda eu começo." },
+      "numero": { "fala": "Já foram doze segundas, e o delivery continua no topo.", "antes": "Já foram", "valor": 12, "depois": "segundas." }
+    }
+  ]
+}

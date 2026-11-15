@@ -1,0 +1,13 @@
+{
+  "id": "numero-lista-oferta",
+  "nome": "Número + lista do que recebe + oferta",
+  "descricao": "Gancho de dor, o número do produto logo no começo, a lista do que a pessoa recebe, o diferencial (ex.: sem aparecer) e a oferta com preço e garantia. Inspirado nos acervos que ficam mais tempo no ar.",
+  "cenas": [
+    { "tipo": "titulo", "fala": "{{gancho.texto}}", "tom": "claro", "personagem": "neutra", "dados": { "linhas": "{{gancho.linhas}}", "marca": "{{gancho.marca}}" } },
+    { "tipo": "contador", "fala": "{{produto.entregaveis.fala}}", "tom": "destaque", "dados": { "antes": "{{produto.entregaveis.antes}}", "numero": "{{produto.entregaveis.quantidade}}", "prefixo": "+", "depois": "{{produto.entregaveis.unidade_frase}}" } },
+    { "tipo": "lista", "fala": "{{produto.entregaveis.fala_itens}}", "tom": "claro", "dados": { "titulo": "{{produto.entregaveis.titulo_itens}}", "itens": "{{produto.entregaveis.itens}}" } },
+    { "tipo": "titulo", "fala": "{{produto.diferencial.fala}}", "tom": "escuro", "dados": { "linhas": "{{produto.diferencial.linhas}}", "marca": "{{produto.diferencial.marca}}" } },
+    { "tipo": "preco", "fala": "{{produto.oferta.fala}}", "tom": "destaque", "dados": { "valor": "{{produto.oferta.valor}}", "moeda": "{{produto.oferta.moeda}}", "de": "{{produto.oferta.de}}", "selos": "{{produto.oferta.selos}}" } },
+    { "tipo": "cta", "fala": "{{produto.cta.fala}}", "tom": "escuro", "personagem": "apontando", "dados": { "pergunta": "{{produto.cta.pergunta}}", "complemento": "{{produto.cta.complemento}}", "marca": "{{produto.cta.marca}}", "botao": "{{produto.cta.botao}}" } }
+  ]
+}
