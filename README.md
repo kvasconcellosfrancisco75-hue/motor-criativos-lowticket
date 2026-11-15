@@ -32,6 +32,9 @@ Requisitos: Node.js 18+, ffmpeg e Chrome/Chromium. Para sincronizar com a fala: 
 ```bash
 npm install
 
+# 0. (recomendado) Classificar referências da Biblioteca de Anúncios: veja docs/referencias.md
+npm run referencias -- --produto produtos/exemplo
+
 # 1. Criar ângulos, ganchos e copy novos (API da Anthropic; ou --modo manual para colar num chat)
 npm run criar -- --produto produtos/exemplo --angulos 3 --ganchos 3
 #    revise criacoes/<nome>.md e reprove o que quiser no .json

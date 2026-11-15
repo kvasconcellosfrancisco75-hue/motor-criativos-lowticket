@@ -15,6 +15,7 @@ import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { lerReferencias } from "./referencias";
 import { carregarFormulas, montarCenas, narracaoDe, segundosEstimados } from "./montar";
 import { args, contarPalavras, lerJSON, salvarJSON, slug } from "./util";
 
@@ -29,6 +30,8 @@ const Gancho = z.object({
 });
 const Angulo = z.object({
   id: z.string().describe("Nome curto em kebab-case."),
+  referencia: z.string().describe("Link da referência validada em que este ângulo se baseia, ou \"nenhuma\"."),
+  aproveita: z.string().describe("O que foi aproveitado da referência: estrutura, tipo de gancho, ritmo, virada. Nunca as frases."),
   base: z.enum(["dor", "desejo", "objecao", "inimigo", "identidade", "custo"]),
   consciencia: z.enum(["inconsciente", "problema", "solucao", "produto"]),
   dor: z.string().describe("A dor ou o desejo deste ângulo, numa frase."),
@@ -58,8 +61,12 @@ if (!a.produto) {
 }
 const pastaProduto = path.resolve(a.produto);
 const produto = lerJSON(path.join(pastaProduto, "produto.json"));
-const nAngulos = Number(a.angulos ?? 3);
-const nGanchos = Number(a.ganchos ?? 3);
+// Referências da Biblioteca de Anúncios: com modelos validados, testa-se menos variações (2 × 2 em vez de 3 × 3).
+const todasRefs = lerReferencias(pastaProduto);
+const validadas = todasRefs.filter((r) => r.nivel === "validado");
+const refs = (validadas.length ? validadas : todasRefs.filter((r) => r.nivel === "promissor")).slice(0, 5);
+const nAngulos = Number(a.angulos ?? (refs.length ? Math.min(2, refs.length) : 3));
+const nGanchos = Number(a.ganchos ?? (refs.length ? 2 : 3));
 const teto = Number(produto.teto_segundos ?? 30);
 const pastaCriacoes = path.join(pastaProduto, "criacoes");
 const agora = new Date();
@@ -104,7 +111,12 @@ Regras que não podem ser quebradas:
 - A pergunta do CTA (cta.pergunta) é o texto da tela; cta.fala é a pergunta falada seguida de "Toque em" e o texto do botão.
 - Slogan: exatamente 3 batidas curtas.
 - Duração: a narração inteira de um vídeo (gancho + promessa + número + mecanismo + entregáveis + slogan + CTA) deve ter no máximo ${palavrasMax} palavras, para caber em ${teto} segundos.
-- NÃO repita nem parafraseie de perto nada da lista "já usado". Variar sempre é o objetivo: ângulo, gancho e copy novos a cada rodada.`;
+- NÃO repita nem parafraseie de perto nada da lista "já usado". Variar sempre é o objetivo: ângulo, gancho e copy novos a cada rodada.
+
+Quando o pedido trouxer "modelos que já provaram funcionar" (anúncios que estão há semanas no ar na Biblioteca de Anúncios):
+- Baseie cada ângulo em um modelo diferente e diga qual no campo "referencia" (o link) e o que aproveitou no campo "aproveita".
+- Aproveite o que fez o modelo funcionar: a estrutura, o tipo e a mecânica do gancho, a ordem das ideias, o ritmo, a virada. Adapte ao produto e ao público da ficha.
+- Nunca copie frases do modelo nem cite o anunciante. Os fatos continuam vindo só da ficha.`;
 
 const fatos = { ...produto };
 for (const k of ["visual", "personagem", "ativos", "angulos", "referencias", "formatos", "formulas", "observacao"]) delete fatos[k];
@@ -117,7 +129,13 @@ Já usado (não repetir):
 - Ganchos: ${historico.ganchos.length ? historico.ganchos.map((x) => `"${x}"`).join("; ") : "nenhum"}
 - Frases de copy: ${historico.copy.length ? historico.copy.map((x) => `"${x}"`).join("; ") : "nenhuma"}
 
-Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos e a copy completa.`;
+${
+  refs.length
+    ? `Modelos que já provaram funcionar (do mais forte para o mais fraco):\n${refs
+        .map((r) => `- ${r.link} · ${r.dias} dias no ar · ${r.versoes} versão(ões) · público ${r.publico} · formato ${r.formato}${r.duracao_s ? ` · ${r.duracao_s} s` : ""}\n  Gancho: "${r.gancho}"\n  Transcrição: "${r.transcricao}"\n  CTA: "${r.cta}"${r.observacao ? `\n  Observação: ${r.observacao}` : ""}`)
+        .join("\n")}\n\n`
+    : ""
+}Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos e a copy completa.`;
 
 // ---------- Validação ----------
 
@@ -156,6 +174,13 @@ function validar(r: TResposta): Problema[] {
   r.angulos.forEach((an, i) => {
     const e = (msg: string, gancho?: number) => p.push({ angulo: i, gancho, msg });
     if (an.ganchos.length !== nGanchos) e(`Pedi ${nGanchos} ganchos e vieram ${an.ganchos.length}.`);
+    if (refs.length) {
+      if (!refs.some((r) => r.link === an.referencia)) e(`A referência "${an.referencia}" não está entre os modelos validados.`);
+      else if (refs.length >= nAngulos && r.angulos.slice(0, i).some((o) => o.referencia === an.referencia)) e("Dois ângulos baseados na mesma referência; use modelos diferentes.");
+      const textosRef = refs.flatMap((x) => [x.gancho, ...x.transcricao.split(/(?<=[.?!])\s+/)]).filter(Boolean);
+      for (const f of [...an.ganchos.map((g) => g.texto), an.promessa.fala, an.numero.fala, an.copy.mecanismo.fala, an.copy.slogan.fala, an.copy.cta.fala])
+        for (const t of textosRef) if (parecido(f, t) >= 0.6) e(`"${f}" copia a referência: "${t}".`);
+    }
     const falas = [an.promessa.fala, an.numero.fala, an.copy.mecanismo.fala, an.copy.entregaveis.fala, an.copy.diferencial.fala, an.copy.slogan.fala, an.copy.oferta.fala, an.copy.cta.fala];
     falas.forEach((f) => /\d/.test(f) && e(`Número em algarismo na fala "${f}": escreva por extenso.`));
     const tela = [...an.copy.mecanismo.linhas, an.copy.entregaveis.antes, an.copy.entregaveis.unidade_frase, ...an.copy.entregaveis.itens, ...an.copy.diferencial.linhas];
@@ -241,7 +266,9 @@ function salvar(r: TResposta, modelo: string, problemas: Problema[]) {
   const f = formulas[0];
   const md = [`# ${produto.nome} · ${nome}`, "", `${angulos.length} ângulos, ${angulos.reduce((s, x) => s + x.ganchos.length, 0)} ganchos. Gerado por ${modelo}.`, "Para reprovar, troque \"aprovado\" para false no .json.", ""];
   for (const an of angulos) {
-    md.push(`## ${an.aprovado ? "" : "⚠ "}${an.id} · ${an.base} · consciência: ${an.consciencia}`, "", `**Dor:** ${an.dor}`, "", "**Ganchos**", "");
+    md.push(`## ${an.aprovado ? "" : "⚠ "}${an.id} · ${an.base} · consciência: ${an.consciencia}`, "", `**Dor:** ${an.dor}`, "");
+    if (an.referencia && an.referencia !== "nenhuma") md.push(`**Baseado em:** ${an.referencia} — ${an.aproveita}`, "");
+    md.push("**Ganchos**", "");
     an.ganchos.forEach((g) => md.push(`- ${g.aprovado ? "" : "⚠ "}(${g.tipo}) ${g.texto}${g.problemas.length ? ` — ${g.problemas.join(" ")}` : ""}`));
     if (f) {
       try {

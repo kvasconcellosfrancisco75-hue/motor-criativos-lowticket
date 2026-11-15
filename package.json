@@ -9,7 +9,8 @@
     "render": "tsx motor/render.ts",
     "conferir": "tsx motor/conferir.ts",
     "studio": "remotion studio src/index.ts",
-    "tipos": "tsc --noEmit"
+    "tipos": "tsc --noEmit",
+    "referencias": "tsx motor/referencias.ts"
   },
   "license": "MIT",
   "dependencies": {
