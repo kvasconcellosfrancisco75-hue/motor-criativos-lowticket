@@ -5,8 +5,8 @@ Você descreve o produto uma vez; o motor monta os roteiros, as cenas e as legen
 variações em lote. Para um produto novo, troca-se só a ficha e os ativos. O motor continua o mesmo.
 
 ```
-ficha do produto ─► ângulos e ganchos ─► fórmulas de roteiro ─► cenas ─► voz ─► sincronia ─► vídeos + legendas
- (produto.json)                          (formulas/*.json)     (src/)          (palavras)    (saida/)
+fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─► cenas ─► voz ─► sincronia ─► vídeos + legendas
+ (produto.json)      (npm run criar → criacoes/)          (formulas/) (src/)          (palavras)    (saida/)
 ```
 
 ## Como funciona
@@ -14,7 +14,7 @@ ficha do produto ─► ângulos e ganchos ─► fórmulas de roteiro ─► ce
 | Camada | Onde | O que faz |
 |---|---|---|
 | 1. Ficha do produto | `produtos/<id>/produto.json` | Público, dores, promessa, mecanismo, entregáveis, oferta, restrições, cores, personagem e ativos. É a raiz de tudo. |
-| 2. Ângulos e ganchos | dentro da ficha (`angulos`) | Cada dor vira um ângulo; cada ângulo tem vários ganchos para testar. |
+| 2. Criação | `npm run criar` → `<produto>/criacoes/` | Gera ângulos, ganchos e copy novos a partir dos fatos. Lê tudo o que já foi criado e recusa repetições, números fora da ficha, falas longas demais e destaques que não aparecem na tela. Você aprova ou reprova cada item no `.json`. |
 | 3. Fórmulas | `formulas/*.json` | Moldes de roteiro com espaços `{{...}}` que a ficha preenche. |
 | 4. Cenas | `src/cenas` | Cenas animadas genéricas (título, citação, contador, lista, prova em vídeo, slogan, preço, CTA). Não sabem qual é o produto: cores e fontes vêm da ficha. |
 | 5. Produção | `motor/` | Gera o lote, prepara a voz, sincroniza as cenas com a fala, renderiza e confere. |
@@ -32,17 +32,21 @@ Requisitos: Node.js 18+, ffmpeg e Chrome/Chromium. Para sincronizar com a fala: 
 ```bash
 npm install
 
-# 1. Gerar o lote de variações a partir da ficha
+# 1. Criar ângulos, ganchos e copy novos (API da Anthropic; ou --modo manual para colar num chat)
+npm run criar -- --produto produtos/exemplo --angulos 3 --ganchos 3
+#    revise criacoes/<nome>.md e reprove o que quiser no .json
+
+# 2. Gerar o lote de variações a partir da criação aprovada
 npm run roteiros -- --produto produtos/exemplo --lote lote-01
 
-# 2. (opcional) Colocar a narração de cada variação e sincronizar
+# 3. (opcional) Colocar a narração de cada variação e sincronizar
 bash motor/preparar-audio.sh gravacao.m4a saida/exemplo-receitas/lote-01/<variação>/narracao.wav
 python motor/sincronizar.py saida/exemplo-receitas/lote-01/<variação>
 
-# 3. Renderizar (todas as variações, ou uma com --so <nome>)
+# 4. Renderizar (todas as variações, ou uma com --so <nome>)
 npm run render -- --lote saida/exemplo-receitas/lote-01
 
-# 4. Conferir duração e volume e gerar a folha de quadros
+# 5. Conferir duração e volume e gerar a folha de quadros
 npm run conferir -- --lote saida/exemplo-receitas/lote-01
 ```
 
