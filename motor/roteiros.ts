@@ -1,7 +1,7 @@
 /**
  * Gera o lote de variações a partir da ficha do produto.
  *
- *   npm run roteiros -- --produto produtos/exemplo [--formulas dor-situacao-solucao-cta] [--formatos 9x16,4x5] [--lote lote-01]
+ *   npm run roteiros -- --produto produtos/exemplo [--formulas dor-situacao-solucao-cta] [--formatos 9x16,4x5] [--lote lote-01] [--saida pasta]
  *
  * Para cada ângulo × gancho × fórmula × formato, escreve em saida/<produto>/<lote>/<variação>/:
  *   variacao.json  — cenas resolvidas (entrada do render)
@@ -28,7 +28,8 @@ const todasFormulas = fs.readdirSync(path.join(RAIZ, "formulas")).filter((f: str
 const escolhidas = a.formulas ? todasFormulas.filter((f: any) => a.formulas.split(",").includes(f.id)) : todasFormulas.filter((f: any) => (produto.formulas ?? [f.id]).includes(f.id));
 const modeloLegenda = lerJSON(path.join(RAIZ, "legendas", "padrao.json"));
 const lote = a.lote ?? "lote-" + new Date().toISOString().slice(0, 10);
-const saida = path.join(RAIZ, "saida", produto.id, lote);
+// --saida <pasta>: grava o lote fora deste repositório (recomendado para produtos privados).
+const saida = a.saida ? path.resolve(a.saida, lote) : path.join(RAIZ, "saida", produto.id, lote);
 
 const tema: Tema = {
   claro: produto.visual.cores.claro,

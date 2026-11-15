@@ -62,8 +62,11 @@ Este repositório é público. **Não coloque aqui** fichas, vozes, gravações 
 Guarde-os num repositório ou pasta privada e aponte o motor para lá:
 
 ```bash
-npm run roteiros -- --produto ../meu-repo-privado/produtos/meu-produto
+npm run roteiros -- --produto ../meu-repo-privado/produtos/meu-produto --saida ../meu-repo-privado/saida
+npm run render -- --lote ../meu-repo-privado/saida/<lote>
 ```
+
+Com `--saida`, os vídeos, roteiros e legendas do produto também ficam na pasta privada.
 
 O render lê os ativos (`ativos/`) da pasta do produto, onde quer que ela esteja. A pasta
 `produtos-privados/` também é ignorada pelo git, se você preferir mantê-los nesta cópia local.
