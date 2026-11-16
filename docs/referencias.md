@@ -41,6 +41,8 @@ A coleta roda nos servidores do Apify, na sua conta: o uso é cobrado por result
 ```
 
 - **Busque pela oferta, não pelo público.** "nutricionista" traz posts de consultório; "roteiros de reels" traz quem vende algo parecido.
+- `relevancia`: termos do assunto. Sem nenhum deles na legenda ou na fala, a referência fica "fora" e não entra na criação.
+- `excluir`: nomes de anunciantes reprovados na revisão (ruído que o filtro por palavra não pega), para não voltarem nas próximas coletas.
 - `so_infoproduto` descarta anúncios que levam a WhatsApp, perfil do Instagram, loja de apps ou a lugar nenhum: são posts impulsionados e serviços, não ofertas. Para aceitar só domínios específicos, liste-os em `dominios_oferta`.
 - Os vídeos dos mais fortes são baixados e transcritos (Whisper): o gancho é a fala dos primeiros segundos, não a legenda.
 - Cada coleta fica em `<produto>/coletas/`. Rodando toda semana, quem segue ativo ganha pontos.

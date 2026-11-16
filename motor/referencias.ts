@@ -55,7 +55,7 @@ const num = (v: string | undefined, padrao: number) => (v && Number.isFinite(Num
 const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** relevancia: termos do assunto (ficha, busca.relevancia). Sem nenhum deles na legenda ou na fala, a referência fica "fora". */
-export function pontuar(linha: Record<string, string>, hoje = new Date(), relevancia: string[] = []): Referencia {
+export function pontuar(linha: Record<string, string>, hoje = new Date(), relevancia: string[] = [], excluir: string[] = []): Referencia {
   const ativo = /^(s|sim|true|1|ativo)$/i.test(linha.ativo ?? "");
   const fim = ativo || !linha.fim ? hoje : data(linha.fim);
   const dias = Math.max(0, Math.round((fim.getTime() - data(linha.inicio).getTime()) / 86400000));
@@ -69,7 +69,9 @@ export function pontuar(linha: Record<string, string>, hoje = new Date(), releva
   const persistencia = Math.min(1, (coletas - 1) / 3) * 10;
   const nota = Math.min(100, Math.round(tempo + escala + (ativo ? 10 : 0) + { mesmo: 15, vizinho: 8, outro: 0 }[publico] + persistencia));
   const conteudo = semAcento(`${linha.gancho ?? ""} ${linha.transcricao ?? ""} ${linha.observacao ?? ""}`);
-  const noAssunto = !relevancia.length || relevancia.some((t) => conteudo.includes(semAcento(t)));
+  // excluir: anunciantes reprovados na revisão (ficha, busca.excluir), para não voltarem a cada coleta.
+  const excluido = excluir.some((e) => semAcento(linha.anunciante ?? "") === semAcento(e));
+  const noAssunto = !excluido && (!relevancia.length || relevancia.some((t) => conteudo.includes(semAcento(t))));
   const nivel = !noAssunto ? "fora" : ativo && (dias >= 60 || (dias >= 30 && (versoes >= 3 || coletas >= 3))) ? "validado" : dias >= 21 ? "promissor" : "fraco";
   return {
     link: linha.link,
@@ -117,7 +119,7 @@ if (require.main === module) {
   if (faltam.length) throw new Error(`Faltam colunas em referencias.csv: ${faltam.join(", ")}`);
   const refs = linhas
     .map((l) => Object.fromEntries(l.split(";").map((v, i) => [nomes[i], v.trim()])))
-    .map((l) => pontuar(l, new Date(), produto.busca?.relevancia ?? []))
+    .map((l) => pontuar(l, new Date(), produto.busca?.relevancia ?? [], produto.busca?.excluir ?? []))
     .sort((x, y) => y.nota - x.nota);
   salvarJSON(path.join(pasta, "referencias.json"), { atualizado_em: new Date().toISOString(), referencias: refs });
   const md = [
