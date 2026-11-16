@@ -53,4 +53,4 @@ export const montarCenas = (formula: any, produto: any, angulo: any, gancho: any
 };
 
 export const narracaoDe = (cenas: Cena[]) => cenas.map((c) => c.fala).join(" ").replace(/\s+/g, " ").trim();
-export const segundosEstimados = (cenas: Cena[]) => tempoEstimado(cenas).reduce((x, y) => x + y, 0) / 30;
+export const segundosEstimados = (cenas: Cena[], ritmo?: number) => tempoEstimado(cenas, ritmo).reduce((x, y) => x + y, 0) / 30;

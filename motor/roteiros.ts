@@ -67,7 +67,7 @@ for (const formula of escolhidas) {
     for (const gancho of angulo.ganchos) {
       const cenas = montarCenas(formula, produto, angulo, gancho);
       const narracao = narracaoDe(cenas);
-      const est = segundosEstimados(cenas);
+      const est = segundosEstimados(cenas, produto.ritmo_fala);
       const p = produtoDoAngulo(produto, angulo);
       const legenda = preencher(modeloLegenda, { produto: p, p, angulo, gancho }, "legenda");
       for (const formato of formatos) {

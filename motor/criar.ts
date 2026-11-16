@@ -47,7 +47,7 @@ const Angulo = z.object({
     oferta: z.object({ fala: z.string() }),
     como_usar: z.string(),
     cta: z.object({ fala: z.string(), pergunta: Linhas, complemento: z.array(z.string()), marca: z.string() }),
-  }),
+  }).optional().describe("Omitir quando a ficha tem núcleo aprovado: a copy do produto vem da ficha."),
 });
 const Resposta = z.object({ angulos: z.array(Angulo) });
 type TResposta = z.infer<typeof Resposta>;
@@ -91,7 +91,10 @@ historico.copy = historico.copy.filter(Boolean);
 
 // ---------- Pedido ----------
 
-const palavrasMax = Math.floor((teto - 1.5 - 7 * 0.3 - 1.5) * 2.8);
+// Núcleo aprovado: a ficha traz a copy do produto que já funcionou (mecanismo, entregáveis, slogan, CTA)
+// e a criação varia só o começo (ângulo, ganchos, promessa e número), para testar ganchos contra o mesmo corpo.
+const nucleo = Boolean(produto.nucleo_aprovado);
+const palavrasMax = Math.floor((teto - 1.5 - 7 * 0.3 - 1.5) * (produto.ritmo_fala ?? 2.8));
 
 const SISTEMA = `Você é redator de anúncios em vídeo (Reels, Stories e Feed) para infoprodutos de baixo preço, em português do Brasil.
 Seu trabalho é criar ÂNGULOS, GANCHOS e COPY novos para um produto, a partir só dos fatos da ficha.
@@ -135,7 +138,11 @@ ${
         .map((r) => `- ${r.link} · ${r.dias} dias no ar · ${r.versoes} versão(ões) · público ${r.publico} · formato ${r.formato}${r.duracao_s ? ` · ${r.duracao_s} s` : ""}\n  Gancho: "${r.gancho}"\n  Transcrição: "${r.transcricao}"\n  CTA: "${r.cta}"${r.observacao ? `\n  Observação: ${r.observacao}` : ""}`)
         .join("\n")}\n\n`
     : ""
-}Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos e a copy completa.`;
+}${
+  nucleo
+    ? `NÚCLEO APROVADO: o produto já tem um corpo de anúncio que funciona. Ele é fixo e entra depois do seu trecho:\n"${[produto.mecanismo?.fala, produto.entregaveis?.fala, produto.slogan?.fala, produto.cta?.fala].filter(Boolean).join(" ")}"\nNão escreva "copy". Crie só o começo de cada vídeo (gancho, promessa e número): curto, e que leve naturalmente à primeira frase do núcleo. Mantenha a pessoa do público explícita (quem ela é) e a dor concreta.\n\n`
+    : ""
+}Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos${nucleo ? "" : " e a copy completa"}.`;
 
 // ---------- Validação ----------
 
@@ -173,26 +180,31 @@ function validar(r: TResposta): Problema[] {
   if (r.angulos.length !== nAngulos) p.push({ angulo: -1, msg: `Pedi ${nAngulos} ângulos e vieram ${r.angulos.length}.` });
   r.angulos.forEach((an, i) => {
     const e = (msg: string, gancho?: number) => p.push({ angulo: i, gancho, msg });
+    const cp = an.copy;
     if (an.ganchos.length !== nGanchos) e(`Pedi ${nGanchos} ganchos e vieram ${an.ganchos.length}.`);
     if (refs.length) {
       if (!refs.some((r) => r.link === an.referencia)) e(`A referência "${an.referencia}" não está entre os modelos validados.`);
       else if (refs.length >= nAngulos && r.angulos.slice(0, i).some((o) => o.referencia === an.referencia)) e("Dois ângulos baseados na mesma referência; use modelos diferentes.");
       const textosRef = refs.flatMap((x) => [x.gancho, ...x.transcricao.split(/(?<=[.?!])\s+/)]).filter(Boolean);
-      for (const f of [...an.ganchos.map((g) => g.texto), an.promessa.fala, an.numero.fala, an.copy.mecanismo.fala, an.copy.slogan.fala, an.copy.cta.fala])
+      for (const f of [...an.ganchos.map((g) => g.texto), an.promessa.fala, an.numero.fala, ...(cp ? [cp.mecanismo.fala, cp.slogan.fala, cp.cta.fala] : [])])
         for (const t of textosRef) if (parecido(f, t) >= 0.6) e(`"${f}" copia a referência: "${t}".`);
     }
-    const falas = [an.promessa.fala, an.numero.fala, an.copy.mecanismo.fala, an.copy.entregaveis.fala, an.copy.diferencial.fala, an.copy.slogan.fala, an.copy.oferta.fala, an.copy.cta.fala];
+    if (nucleo && cp) e("A ficha tem núcleo aprovado: não reescreva a copy do produto (omita \"copy\").");
+    if (!nucleo && !cp) e("Falta a copy do ângulo.");
+    const falas = [an.promessa.fala, an.numero.fala, ...(cp ? [cp.mecanismo.fala, cp.entregaveis.fala, cp.diferencial.fala, cp.slogan.fala, cp.oferta.fala, cp.cta.fala] : [])];
     falas.forEach((f) => /\d/.test(f) && e(`Número em algarismo na fala "${f}": escreva por extenso.`));
-    const tela = [...an.copy.mecanismo.linhas, an.copy.entregaveis.antes, an.copy.entregaveis.unidade_frase, ...an.copy.entregaveis.itens, ...an.copy.diferencial.linhas];
-    for (const n of tela.join(" ").match(/\d+/g) ?? []) if (!numerosPermitidos.has(n)) e(`O número ${n} aparece na tela mas não está na ficha.`);
-    if (produto.marca && !contem(an.copy.mecanismo.linhas, produto.marca)) e(`As linhas do mecanismo não trazem a marca "${produto.marca}".`);
-    if (!contem(an.copy.entregaveis.unidade_frase, an.copy.entregaveis.marca)) e(`O destaque "${an.copy.entregaveis.marca}" não está em entregaveis.unidade_frase.`);
-    if (!contem(an.copy.diferencial.linhas, an.copy.diferencial.marca)) e(`O destaque "${an.copy.diferencial.marca}" não está nas linhas do diferencial.`);
-    if (!contem(an.copy.cta.pergunta, an.copy.cta.marca)) e(`O destaque "${an.copy.cta.marca}" não está na pergunta do CTA.`);
-    if (an.copy.slogan.palavras.length !== 3) e("O slogan precisa de exatamente 3 batidas.");
+    if (cp) {
+      const tela = [...cp.mecanismo.linhas, cp.entregaveis.antes, cp.entregaveis.unidade_frase, ...cp.entregaveis.itens, ...cp.diferencial.linhas];
+      for (const n of tela.join(" ").match(/\d+/g) ?? []) if (!numerosPermitidos.has(n)) e(`O número ${n} aparece na tela mas não está na ficha.`);
+      if (produto.marca && !contem(cp.mecanismo.linhas, produto.marca)) e(`As linhas do mecanismo não trazem a marca "${produto.marca}".`);
+      if (!contem(cp.entregaveis.unidade_frase, cp.entregaveis.marca)) e(`O destaque "${cp.entregaveis.marca}" não está em entregaveis.unidade_frase.`);
+      if (!contem(cp.diferencial.linhas, cp.diferencial.marca)) e(`O destaque "${cp.diferencial.marca}" não está nas linhas do diferencial.`);
+      if (!contem(cp.cta.pergunta, cp.cta.marca)) e(`O destaque "${cp.cta.marca}" não está na pergunta do CTA.`);
+      if (cp.slogan.palavras.length !== 3) e("O slogan precisa de exatamente 3 batidas.");
+    }
     for (const proibida of produto.proibidas ?? []) for (const f of [...falas, an.legenda_gancho]) if (f.toLowerCase().includes(String(proibida).toLowerCase())) e(`Expressão proibida pela ficha: "${proibida}".`);
     for (const h of historico.angulos) if (parecido(an.dor, h) >= 0.6) e(`Ângulo parecido com um já usado: "${h}".`);
-    for (const f of [an.copy.mecanismo.fala, an.copy.slogan.fala, an.copy.cta.fala, an.promessa.fala, an.numero.fala])
+    for (const f of [...(cp ? [cp.mecanismo.fala, cp.slogan.fala, cp.cta.fala] : []), an.promessa.fala, an.numero.fala])
       for (const h of historico.copy) if (parecido(f, h) >= 0.7) e(`"${f}" repete uma frase já usada: "${h}".`);
     r.angulos.slice(0, i).forEach((outro) => parecido(an.dor, outro.dor) >= 0.6 && e(`Ângulo parecido com "${outro.id}" desta mesma rodada.`));
     an.ganchos.forEach((g, j) => {
@@ -206,7 +218,7 @@ function validar(r: TResposta): Problema[] {
       for (const f of formulas) {
         try {
           const cenas = montarCenas(f, produto, an, g);
-          const seg = segundosEstimados(cenas);
+          const seg = segundosEstimados(cenas, produto.ritmo_fala);
           if (seg > teto) e(`Com a fórmula ${f.id} o vídeo fica com ~${seg.toFixed(1)} s (${contarPalavras(narracaoDe(cenas))} palavras); o teto é ${teto} s.`, j);
         } catch (err: any) {
           e(`A fórmula ${f.id} não fecha: ${err.message}`, j);
@@ -273,7 +285,7 @@ function salvar(r: TResposta, modelo: string, problemas: Problema[]) {
     if (f) {
       try {
         const cenas = montarCenas(f, produto, an, an.ganchos[0]);
-        md.push("", `**Narração com o 1º gancho (${f.id}, ~${segundosEstimados(cenas).toFixed(1)} s)**`, "", narracaoDe(cenas));
+        md.push("", `**Narração com o 1º gancho (${f.id}, ~${segundosEstimados(cenas, produto.ritmo_fala).toFixed(1)} s)**`, "", narracaoDe(cenas));
       } catch {}
     }
     md.push("", `**Legenda:** ${an.legenda_gancho}`);

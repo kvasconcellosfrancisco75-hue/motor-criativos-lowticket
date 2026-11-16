@@ -29,6 +29,15 @@ const lista = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : type
 
 /* Os elementos de cada cena entram distribuídos na primeira metade dela,
    para acompanhar a fala sem depender do tempo exato de cada palavra. */
+/** Tamanho de fonte para a linha mais longa ocupar a largura útil (920 px), sem passar de "max".
+ *  Evita texto pequeno boiando numa tela vazia. */
+const caber = (linhas: string[], max: number, largura = 920) => {
+  const maior = Math.max(...linhas.map((l) => l.length), 1);
+  return Math.max(72, Math.min(max, Math.floor(largura / (maior * 0.54))));
+};
+/** Altura da personagem nas cenas com texto em cima: alta o bastante para encostar no texto. */
+const ALTURA_PERSONAGEM = 1150;
+
 const passo = (dur: number, n: number) => Math.max(4, Math.min(18, Math.floor((dur * 0.5) / Math.max(1, n))));
 
 /** titulo: linhas grandes, uma palavra marcada e personagem opcional. */
@@ -41,11 +50,11 @@ const CenaTitulo: React.FC<P> = ({ cena, dur }) => {
   return (
     <AbsoluteFill style={{ ...pad, justifyContent: cena.personagem ? "flex-start" : "center" }}>
       {linhas.map((l, i) => (
-        <Titulo key={i} delay={2 + i * k} tamanho={num(cena.dados.tamanho, 124)} cor={c.texto}>
+        <Titulo key={i} delay={2 + i * k} tamanho={num(cena.dados.tamanho) || caber(linhas, cena.personagem ? 150 : 210)} cor={c.texto} style={{ lineHeight: 1.04 }}>
           <FraseComMarca texto={l} marca={marca} delay={8 + i * k} tom={cena.tom} />
         </Titulo>
       ))}
-      <Personagem arquivo={cena.personagem} altura={900} delay={4 + k} lado="direita" />
+      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={4 + k} lado="direita" />
       <Efeito em={2} som="pop" volume={0.4} />
     </AbsoluteFill>
   );
@@ -79,7 +88,7 @@ const CenaCitacao: React.FC<P> = ({ cena, dur }) => {
       >
         “{str(cena.dados.citacao)}”
       </div>
-      <Personagem arquivo={cena.personagem} altura={900} delay={meio + 4} lado="direita" />
+      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" />
       <Efeito em={meio} som="pop" volume={0.55} />
     </AbsoluteFill>
   );
@@ -103,7 +112,7 @@ const CenaContador: React.FC<P> = ({ cena, dur }) => {
           {str(cena.dados.depois)}
         </Titulo>
       </div>
-      <Personagem arquivo={cena.personagem} altura={900} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
+      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
       <Efeito em={meio} som="pop" volume={0.6} />
     </AbsoluteFill>
   );
@@ -192,10 +201,9 @@ const CenaBatidas: React.FC<P> = ({ cena, dur }) => {
   const palavras = lista(cena.dados.palavras);
   const k = passo(dur, palavras.length);
   // Ajusta o tamanho para a palavra mais longa caber numa linha só.
-  const maior = Math.max(...palavras.map((w) => w.length), 1);
-  const tamanho = Math.min(num(cena.dados.tamanho, 200), Math.floor(920 / (maior * 0.56)));
+  const tamanho = num(cena.dados.tamanho) || caber(palavras, cena.personagem ? 190 : 240);
   return (
-    <AbsoluteFill style={{ ...pad, justifyContent: "center" }}>
+    <AbsoluteFill style={{ ...pad, justifyContent: cena.personagem ? "flex-start" : "center" }}>
       {palavras.map((w, i) => (
         <Titulo key={i} delay={3 + i * k} tamanho={tamanho} cor={c.texto} style={{ lineHeight: 1.08, whiteSpace: "nowrap" }}>
           {i === palavras.length - 1 ? (
@@ -210,6 +218,7 @@ const CenaBatidas: React.FC<P> = ({ cena, dur }) => {
       {palavras.map((_, i) => (
         <Efeito key={i} em={3 + i * k} som="pop" volume={0.55} />
       ))}
+      <Personagem arquivo={cena.personagem} altura={1050} delay={3 + palavras.length * k} lado="centro" />
     </AbsoluteFill>
   );
 };
@@ -290,10 +299,11 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
   const anel = f > botaoEm + 20 ? ((f - botaoEm - 20) % 36) / 36 : 0;
   const marca = str(cena.dados.marca);
   return (
-    <AbsoluteFill style={{ ...pad, justifyContent: "center" }}>
+    <AbsoluteFill style={{ ...pad, justifyContent: fase < fases.length && cena.personagem ? "flex-start" : "center" }}>
+      {fase < fases.length && <Personagem arquivo={cena.personagem} altura={1000} delay={6} lado="direita" />}
       {fase < fases.length &&
         fases[fase].map((l, i) => (
-          <Titulo key={`${fase}-${i}`} delay={fase * faseDur + 2 + i * 8} tamanho={140} cor={c.texto}>
+          <Titulo key={`${fase}-${i}`} delay={fase * faseDur + 2 + i * 8} tamanho={caber(fases[fase], cena.personagem ? 150 : 180)} cor={c.texto} style={{ lineHeight: 1.04 }}>
             <FraseComMarca texto={l} marca={marca} delay={fase * faseDur + 8 + i * 8} tom={cena.tom ?? "escuro"} />
           </Titulo>
         ))}
@@ -346,7 +356,7 @@ const CtaPersonagem: React.FC<{ arquivo: string; delay: number }> = ({ arquivo, 
   return (
     <img
       src={staticFile(arquivo)}
-      style={{ height: 700 * s, transformOrigin: "50% 100%", transform: `scale(${r(0.6 + 0.4 * p)})`, opacity: Math.min(1, p * 3), filter: "drop-shadow(0 24px 40px rgba(0,0,0,0.3))" }}
+      style={{ height: 860 * s, transformOrigin: "50% 100%", transform: `scale(${r(0.6 + 0.4 * p)})`, opacity: Math.min(1, p * 3), filter: "drop-shadow(0 24px 40px rgba(0,0,0,0.3))" }}
     />
   );
 };

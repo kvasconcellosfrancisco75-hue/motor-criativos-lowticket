@@ -4,8 +4,9 @@ import { contarPalavras } from "./util";
 
 export type Palavra = { w: string; s: number; e: number };
 
-/** Ritmo médio de narração usado quando ainda não existe áudio (palavras por segundo). */
-const RITMO = 2.8;
+/** Ritmo médio de narração usado quando ainda não existe áudio (palavras por segundo).
+ *  Cada produto pode trocar com "ritmo_fala" na ficha, medido num criativo aprovado. */
+export const RITMO = 2.8;
 /** Tempo que o último quadro (o botão do CTA) fica na tela depois da fala. */
 const RESPIRO_FINAL = 1.5;
 /** Antecipação do corte em relação à primeira palavra de cada cena (a troca começa um pouco antes). */
@@ -19,9 +20,9 @@ const norm = (s: string) =>
     .replace(/[^a-z0-9]/g, "");
 
 /** Sem áudio: estima a duração de cada cena pelo número de palavras faladas. */
-export const tempoEstimado = (cenas: Cena[]): number[] =>
+export const tempoEstimado = (cenas: Cena[], ritmo = RITMO): number[] =>
   cenas.map((c, i) => {
-    const seg = Math.max(1.3, contarPalavras(c.fala) / RITMO + 0.3) + (i === cenas.length - 1 ? RESPIRO_FINAL : 0);
+    const seg = Math.max(1.3, contarPalavras(c.fala) / ritmo + 0.3) + (i === cenas.length - 1 ? RESPIRO_FINAL : 0);
     return Math.round(seg * FPS);
   });
 

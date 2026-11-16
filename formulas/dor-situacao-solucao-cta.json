@@ -3,12 +3,81 @@
   "nome": "Dor → situação → solução → CTA",
   "descricao": "Uma história só: a dor com um número que dói, a promessa que não se cumpre, a solução e uma chamada. Sem preço no vídeo (a página e a legenda cuidam da oferta).",
   "cenas": [
-    { "tipo": "titulo", "fala": "{{gancho.texto}}", "tom": "claro", "personagem": "neutra", "dados": { "linhas": "{{gancho.linhas}}", "marca": "{{gancho.marca}}" } },
-    { "tipo": "citacao", "fala": "{{angulo.promessa.fala}}", "tom": "escuro", "personagem": "confiante", "dados": { "antes": "{{angulo.promessa.antes}}", "citacao": "{{angulo.promessa.citacao}}" } },
-    { "tipo": "contador", "fala": "{{angulo.numero.fala}}", "tom": "escuro", "personagem": "frustrada", "dados": { "antes": "{{angulo.numero.antes}}", "numero": "{{angulo.numero.valor}}", "depois": "{{angulo.numero.depois}}", "tremer": true } },
-    { "tipo": "titulo", "fala": "{{produto.mecanismo.fala}}", "tom": "destaque", "dados": { "linhas": "{{produto.mecanismo.linhas}}", "marca": "{{produto.marca}}" } },
-    { "tipo": "prova-video", "fala": "{{produto.entregaveis.fala}}", "tom": "destaque", "dados": { "antes": "{{produto.entregaveis.antes}}", "numero": "{{produto.entregaveis.quantidade}}", "prefixo": "+", "depois": "{{produto.entregaveis.unidade_frase}}", "marca": "{{produto.entregaveis.marca}}", "video": "{{produto.ativos.prova_video}}" } },
-    { "tipo": "batidas", "fala": "{{produto.slogan.fala}}", "tom": "escuro", "dados": { "palavras": "{{produto.slogan.palavras}}" } },
-    { "tipo": "cta", "fala": "{{produto.cta.fala}}", "tom": "escuro", "personagem": "apontando", "dados": { "pergunta": "{{produto.cta.pergunta}}", "complemento": "{{produto.cta.complemento}}", "marca": "{{produto.cta.marca}}", "botao": "{{produto.cta.botao}}" } }
+    {
+      "tipo": "titulo",
+      "fala": "{{gancho.texto}}",
+      "tom": "claro",
+      "personagem": "neutra",
+      "dados": {
+        "linhas": "{{gancho.linhas}}",
+        "marca": "{{gancho.marca}}"
+      }
+    },
+    {
+      "tipo": "citacao",
+      "fala": "{{angulo.promessa.fala}}",
+      "tom": "escuro",
+      "personagem": "confiante",
+      "dados": {
+        "antes": "{{angulo.promessa.antes}}",
+        "citacao": "{{angulo.promessa.citacao}}"
+      }
+    },
+    {
+      "tipo": "contador",
+      "fala": "{{angulo.numero.fala}}",
+      "tom": "escuro",
+      "personagem": "frustrada",
+      "dados": {
+        "antes": "{{angulo.numero.antes}}",
+        "numero": "{{angulo.numero.valor}}",
+        "depois": "{{angulo.numero.depois}}",
+        "tremer": true
+      }
+    },
+    {
+      "tipo": "titulo",
+      "fala": "{{produto.mecanismo.fala}}",
+      "tom": "destaque",
+      "dados": {
+        "linhas": "{{produto.mecanismo.linhas}}",
+        "marca": "{{produto.marca}}"
+      },
+      "personagem": "pensando"
+    },
+    {
+      "tipo": "prova-video",
+      "fala": "{{produto.entregaveis.fala}}",
+      "tom": "destaque",
+      "dados": {
+        "antes": "{{produto.entregaveis.antes}}",
+        "numero": "{{produto.entregaveis.quantidade}}",
+        "prefixo": "+",
+        "depois": "{{produto.entregaveis.unidade_frase}}",
+        "marca": "{{produto.entregaveis.marca}}",
+        "video": "{{produto.ativos.prova_video}}"
+      }
+    },
+    {
+      "tipo": "batidas",
+      "fala": "{{produto.slogan.fala}}",
+      "tom": "escuro",
+      "dados": {
+        "palavras": "{{produto.slogan.palavras}}"
+      },
+      "personagem": "comemorando"
+    },
+    {
+      "tipo": "cta",
+      "fala": "{{produto.cta.fala}}",
+      "tom": "escuro",
+      "personagem": "apontando",
+      "dados": {
+        "pergunta": "{{produto.cta.pergunta}}",
+        "complemento": "{{produto.cta.complemento}}",
+        "marca": "{{produto.cta.marca}}",
+        "botao": "{{produto.cta.botao}}"
+      }
+    }
   ]
 }

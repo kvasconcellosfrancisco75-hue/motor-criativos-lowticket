@@ -18,6 +18,8 @@ Há um exemplo completo, de um produto fictício, em [`produtos/exemplo/produto.
 | `formulas` | Quais fórmulas usar para este produto. |
 | `publico`, `promessa` | Referência para quem escreve os ângulos e revisa os roteiros. |
 | `restricoes` | O que não pode aparecer (por exemplo, antes e depois ou promessa de resultado). |
+| `ritmo_fala` | Palavras por segundo da narração, medido num criativo aprovado (padrão 2,8). Usado para estimar a duração e o limite de palavras. |
+| `nucleo_aprovado` | `true` quando o produto já tem um corpo de anúncio que funciona. Mecanismo, entregáveis, slogan e CTA ficam fixos (vêm da ficha) e a criação varia só o começo: ângulo, gancho, promessa e número. Assim se testa gancho contra o mesmo corpo. |
 
 ## Ângulos (`angulos[]`)
 
