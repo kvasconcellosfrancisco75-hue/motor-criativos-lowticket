@@ -41,7 +41,7 @@ Cada gancho gera uma variação, então é aqui que se testa mais.
 | Campo | Uso |
 |---|---|
 | `mecanismo` | A virada para a solução: `{ "fala", "linhas" }`. |
-| `entregaveis` | O que a pessoa recebe: quantidade e textos para o contador, a lista e a legenda. |
+| `entregaveis` | O que a pessoa recebe: quantidade e textos para o contador, a lista e a legenda. `prefixo` vai antes do número do contador: `"+"` para "mais de", `""` quando o número é exato. |
 | `diferencial` | O que torna fácil (por exemplo, "sem aparecer"). |
 | `como_usar` | Uma frase para a legenda. |
 | `slogan` | Três batidas: `{ "fala", "palavras": ["Uma.", "Duas.", "E três."] }`. |

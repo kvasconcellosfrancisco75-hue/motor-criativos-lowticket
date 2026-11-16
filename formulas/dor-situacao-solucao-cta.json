@@ -52,7 +52,7 @@
       "dados": {
         "antes": "{{produto.entregaveis.antes}}",
         "numero": "{{produto.entregaveis.quantidade}}",
-        "prefixo": "+",
+        "prefixo": "{{produto.entregaveis.prefixo}}",
         "depois": "{{produto.entregaveis.unidade_frase}}",
         "marca": "{{produto.entregaveis.marca}}",
         "video": "{{produto.ativos.prova_video}}"

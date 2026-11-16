@@ -93,6 +93,18 @@ Modelo padrão: `claude-opus-5-5` (troque com `--modelo`). Ele roda em lotes de 
 **Sem chave da API:** `--modo manual` escreve `pedido-curadoria.md`. Cole num chat com o Claude, salve
 a resposta como `resposta.json` e rode `npm run curadoria -- --produto <pasta> --de-arquivo resposta.json`.
 
+## Da curadoria para a criação
+
+A curadoria leva os anúncios de fit 60 ou mais (`--fit-referencia N`, ou `fit_referencia` na ficha) para
+`<produto>/referencias.csv`, com o gancho, a copy e a estrutura analisada. Daí em diante segue o fluxo normal:
+
+```bash
+npm run referencias -- --produto <pasta>   # pontua: validado, promissor, fraco
+npm run criar       -- --produto <pasta>   # cada ângulo parte de uma referência validada diferente
+```
+
+Para desligar, use `"exportar_referencias": false` em `inteligencia`.
+
 ## Arquivos
 
 ```

@@ -11,6 +11,7 @@
  *   [--modo manual]           não chama a API: escreve pedido-curadoria.md para colar num chat
  *   [--de-arquivo resp.json]  importa a resposta do modo manual
  *   [--modelo claude-opus-5-5]
+ *   [--fit-referencia 60]     fit mínimo para o anúncio ir para referencias.csv (modelo da criação)
  *
  * Precisa de credencial da Anthropic no modo api (ANTHROPIC_API_KEY ou `ant auth login`).
  */
@@ -327,7 +328,48 @@ function baixarMidias(lista: AnuncioFB[]) {
   console.log(ok ? `Mídias salvas em ${pastaMidia} (${ok} arquivos${falhas ? `, ${falhas} falharam e ficam com o link remoto` : ""}).` : `Não consegui baixar as mídias (rede bloqueia *.fbcdn.net?); o report usa os links remotos, que expiram em alguns dias.`);
 }
 
-// ---------- 7. Juntar e salvar ----------
+// ---------- 7. Referências para a criação ----------
+
+/**
+ * Leva os anúncios de fit alto para <produto>/referencias.csv, que `npm run referencias` pontua e
+ * `npm run criar` usa como modelos. Mantém as linhas que não vieram da curadoria (coleta manual etc.).
+ */
+function exportarReferencias(sel: Array<AnuncioFB & { analise?: TAnalise }>) {
+  const minimo = Number(a["fit-referencia"] ?? cfg.fit_referencia ?? 60);
+  const COLUNAS = ["link", "anunciante", "inicio", "fim", "ativo", "versoes", "formato", "duracao_s", "publico", "gancho", "transcricao", "cta", "observacao", "coletas"];
+  const limpar = (v: any) => String(v ?? "").replace(/[;\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  const br = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "");
+  const fortes = sel.filter((x) => (x.analise?.fit ?? 0) >= minimo);
+  const linhas = fortes.map((x) => {
+    const an = x.analise!;
+    const v: Record<string, string | number> = {
+      link: x.link,
+      anunciante: x.pagina,
+      inicio: br(x.inicio),
+      fim: x.ativo ? "" : br(x.fim),
+      ativo: x.ativo ? "sim" : "não",
+      versoes: x.versoes,
+      formato: x.midias[0]?.tipo === "video" ? "video" : x.cards.length > 1 ? "carrossel" : "imagem",
+      duracao_s: "",
+      publico: an.fit >= 85 ? "mesmo" : "vizinho",
+      gancho: an.gancho,
+      transcricao: [x.titulo, x.texto].filter(Boolean).join(" — ").slice(0, 1500),
+      cta: x.cta,
+      observacao: `fit ${an.fit} · ângulo: ${an.angulo_nome} · estrutura: ${an.estrutura.join(" > ")} · ${an.estrategia}`,
+      coletas: 1,
+    };
+    return COLUNAS.map((c) => limpar(v[c])).join(";");
+  });
+  const csv = path.join(pasta, "referencias.csv");
+  const antigas = fs.existsSync(csv) ? fs.readFileSync(csv, "utf8").split(/\r?\n/).filter((l) => l.trim()) : [];
+  const cab = antigas[0]?.split(";") ?? COLUNAS;
+  const novos = new Set(fortes.map((x) => x.link));
+  const outras = antigas.slice(1).filter((l) => !novos.has(l.split(";")[cab.indexOf("link")]));
+  fs.writeFileSync(csv, [COLUNAS.join(";"), ...outras, ...linhas].join("\n") + "\n");
+  console.log(`${linhas.length} anúncios com fit ${minimo}+ foram para ${csv}. Depois: npm run referencias -- --produto ${a.produto}`);
+}
+
+// ---------- 8. Juntar e salvar ----------
 
 async function main() {
   const todos: AnuncioFB[] = coleta.anuncios;
@@ -376,6 +418,7 @@ async function main() {
     selecionados,
   };
   salvarJSON(path.join(pastaColeta, "curadoria.json"), curadoria);
+  if (cfg.exportar_referencias !== false) exportarReferencias(selecionados);
   const html = await gerarRelatorio(curadoria, path.join(pastaColeta, "report.html"));
   // Cópia na pasta de inteligência (sempre a última coleta), com o caminho das mídias locais ajustado.
   const copia = JSON.parse(JSON.stringify(curadoria).split('"midia/').join(`"${dia}/midia/`));
