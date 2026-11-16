@@ -4,3 +4,5 @@ saida
 .DS_Store
 # produtos reais ficam fora do repositório público
 produtos-privados
+# dados minerados da Biblioteca de Anúncios (conteúdo de terceiros)
+inteligencia/

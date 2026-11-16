@@ -56,6 +56,20 @@
   "personagem": {},
   "ativos": { "prova_video": "" },
 
+  "inteligencia": {
+    "descricao": "pack digital de receitas rápidas com lista de compras, vendido por R$27",
+    "contexto": "Público majoritariamente feminino, 25 a 45 anos, que trabalha fora e pede delivery demais.",
+    "termos": ["receitas rápidas", "cardápio semanal", "marmitas fit", "receitas fáceis"],
+    "pais": "BR",
+    "total": 100,
+    "selecionar": 30,
+    "max_por_anunciante": 3,
+    "midia": "all",
+    "objetivo": "ambos",
+    "so_oferta": true,
+    "excluir": []
+  },
+
   "angulos": [
     {
       "id": "tempo",

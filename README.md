@@ -11,6 +11,10 @@ fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─
 
 ## Como funciona
 
+> **Antes de criar, veja o que já funciona.** `npm run minerar` + `npm run curadoria` minam a Biblioteca de
+> Anúncios da Meta pelo Apify, escolhem os anúncios ativos há mais tempo e geram um dashboard com o fit de
+> cada um com o seu produto, o ângulo de venda e como adaptar. Guia: [docs/inteligencia.md](docs/inteligencia.md).
+
 | Camada | Onde | O que faz |
 |---|---|---|
 | 1. Ficha do produto | `produtos/<id>/produto.json` | Público, dores, promessa, mecanismo, entregáveis, oferta, restrições, cores, personagem e ativos. É a raiz de tudo. |
@@ -32,7 +36,11 @@ Requisitos: Node.js 18+, ffmpeg e Chrome/Chromium. Para sincronizar com a fala: 
 ```bash
 npm install
 
-# 0. (recomendado) Classificar referências da Biblioteca de Anúncios: veja docs/referencias.md
+# 0a. Inteligência competitiva: 100 anúncios do nicho → 30 validados → análise da IA → report.html
+npm run minerar   -- --produto produtos/exemplo
+npm run curadoria -- --produto produtos/exemplo     # veja docs/inteligencia.md
+
+# 0b. (recomendado) Classificar referências da Biblioteca de Anúncios: veja docs/referencias.md
 npm run referencias -- --produto produtos/exemplo
 
 # 1. Criar ângulos, ganchos e copy novos (API da Anthropic; ou --modo manual para colar num chat)

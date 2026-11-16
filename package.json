@@ -11,7 +11,10 @@
     "studio": "remotion studio src/index.ts",
     "tipos": "tsc --noEmit",
     "referencias": "tsx motor/referencias.ts",
-    "coletar": "tsx motor/coletar.ts"
+    "coletar": "tsx motor/coletar.ts",
+    "minerar": "tsx motor/minerar.ts",
+    "curadoria": "tsx motor/curadoria.ts",
+    "relatorio": "tsx motor/relatorio.ts"
   },
   "license": "MIT",
   "dependencies": {
@@ -20,9 +23,11 @@
     "@fontsource/instrument-serif": "^5.3.0",
     "@remotion/cli": "^4.0.543",
     "apify-client": "^2.26.0",
+    "postcss": "^8.4.49",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.543",
+    "tailwindcss": "^3.4.17",
     "zod": "^4.6.7"
   },
   "devDependencies": {

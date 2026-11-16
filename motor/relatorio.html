@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Sem referrer: o CDN da Meta (fbcdn.net) bloqueia mídia quando a página de origem é enviada. -->
+<meta name="referrer" content="no-referrer">
+<title>Radar de Criativos · __TITULO__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+__TAILWIND__
+<style>
+  body { background: #06070B; }
+  .grid-bg { background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139,124,255,.18), transparent 60%), radial-gradient(ellipse 50% 40% at 100% 0%, rgba(56,225,198,.10), transparent 60%); }
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); backdrop-filter: blur(12px); }
+  .clamp-6 { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .gradient-text { background: linear-gradient(90deg, #fff 0%, #C9C2FF 45%, #7FF0DD 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .ring-track { stroke: rgba(255,255,255,.08); }
+  .chip { border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.03); }
+  .chip-on { border-color: rgba(139,124,255,.6); background: rgba(139,124,255,.15); color: #fff; }
+  .card { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+  .card:hover { transform: translateY(-3px); border-color: rgba(139,124,255,.35); box-shadow: 0 24px 60px -30px rgba(139,124,255,.45); }
+  .pulse { box-shadow: 0 0 0 0 rgba(56,225,198,.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(56,225,198,.55); } 70% { box-shadow: 0 0 0 7px rgba(56,225,198,0); } 100% { box-shadow: 0 0 0 0 rgba(56,225,198,0); } }
+  .fade-in { animation: fade .45s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  ::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #1d2130; border-radius: 10px; }
+  select { background-image: none; }
+</style>
+</head>
+<body class="font-sans text-ink antialiased selection:bg-accent/40">
+<div class="grid-bg min-h-screen">
+
+  <!-- Barra superior -->
+  <header class="sticky top-0 z-30 border-b border-line bg-canvas/70 backdrop-blur-xl">
+    <div class="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 sm:px-6">
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent2 shadow-glow">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 text-canvas" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-sm font-semibold leading-tight">Radar de Criativos</p>
+        <p id="sub" class="truncate text-xs text-mute"></p>
+      </div>
+      <div class="ml-auto hidden items-center gap-2 text-xs text-mute sm:flex" id="meta"></div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1400px] px-4 pb-24 sm:px-6">
+
+    <!-- Hero -->
+    <section class="pt-10 sm:pt-14">
+      <p class="mb-3 inline-flex items-center gap-2 rounded-full chip px-3 py-1 text-xs text-mute"><span class="h-1.5 w-1.5 rounded-full bg-accent2 pulse"></span> Inteligência competitiva · Biblioteca de Anúncios da Meta</p>
+      <h1 class="max-w-4xl text-3xl font-extrabold tracking-tight sm:text-5xl"><span class="gradient-text" id="titulo"></span></h1>
+      <p class="mt-3 max-w-2xl text-sm text-mute sm:text-base" id="lead"></p>
+      <div id="kpis" class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"></div>
+    </section>
+
+    <!-- Resumo da IA + Ângulos -->
+    <section class="mt-8 grid gap-4 lg:grid-cols-5">
+      <div id="resumo" class="glass rounded-2xl border border-line p-5 sm:p-6 lg:col-span-3"></div>
+      <div class="glass rounded-2xl border border-line p-5 sm:p-6 lg:col-span-2">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-sm font-semibold">Ângulos de venda</h2>
+          <span class="text-xs text-mute">clique para filtrar</span>
+        </div>
+        <div id="angulos" class="space-y-2.5"></div>
+        <div class="mt-6 mb-3 flex items-center justify-between"><h2 class="text-sm font-semibold">Distribuição de fit</h2></div>
+        <div id="distfit" class="flex h-24 items-end gap-1.5"></div>
+        <div class="mt-1.5 flex justify-between font-mono text-[10px] text-mute"><span>0</span><span>50</span><span>100</span></div>
+      </div>
+    </section>
+
+    <!-- Filtros -->
+    <section class="sticky top-[57px] z-20 mt-8 -mx-4 border-y border-line bg-canvas/80 px-4 py-3 backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative min-w-[200px] flex-1">
+          <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="busca" type="search" placeholder="Buscar na copy, anunciante, ângulo…" class="w-full rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-mute/70 focus:border-accent/60 focus:outline-none">
+        </div>
+        <div id="fitchips" class="flex gap-1.5"></div>
+        <select id="formato" class="rounded-xl border border-line bg-surface px-3 py-2 text-sm focus:outline-none">
+          <option value="">Todos os formatos</option><option value="video">Vídeo</option><option value="imagem">Imagem</option><option value="carrossel">Carrossel</option>
+        </select>
+        <select id="ordem" class="rounded-xl border border-line bg-surface px-3 py-2 text-sm focus:outline-none">
+          <option value="fit">Maior fit</option><option value="dias">Mais tempo no ar</option><option value="versoes">Mais versões</option><option value="oferta">Potencial da oferta</option>
+        </select>
+        <button id="limpar" class="hidden rounded-xl px-3 py-2 text-sm text-mute hover:text-ink">Limpar</button>
+        <span id="contagem" class="ml-auto font-mono text-xs text-mute"></span>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section id="grid" class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3"></section>
+    <p id="vazio" class="hidden py-20 text-center text-mute">Nenhum anúncio com esses filtros.</p>
+
+    <footer class="mt-16 border-t border-line pt-6 text-xs leading-relaxed text-mute">
+      Sinais públicos de validação: tempo no ar, versões do mesmo criativo e anúncio ainda ativo. A Biblioteca não mostra vendas nem custo.
+      As mídias vêm do CDN da Meta e expiram depois de alguns dias; para ver de novo, abra o anúncio na Biblioteca ou rode uma coleta nova.
+      Modele estruturas e ângulos, nunca copie frases ou criativos.
+    </footer>
+  </main>
+</div>
+
+<script id="dados" type="application/json">__DADOS__</script>
+<script>
+(() => {
+  // Mídia do CDN da Meta que expirou: troca pelo aviso, mantendo a posição no carrossel.
+  window.midiaQuebrada = (el) => {
+    const d = document.createElement("div");
+    d.dataset.slide = el.dataset.slide;
+    d.className = (el.classList.contains("hidden") ? "hidden " : "") + "flex h-full w-full flex-col items-center justify-center gap-2 bg-raised p-6 text-center text-sm text-mute";
+    d.innerHTML = '<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>A mídia expirou no CDN da Meta.<span class="text-xs">Abra o anúncio na Biblioteca.</span>';
+    el.replaceWith(d);
+  };
+  const D = JSON.parse(document.getElementById("dados").textContent);
+  const ADS = D.selecionados;
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const semAspas = (s) => String(s ?? "").trim().replace(/^["“”']+|["“”']+$/g, "");
+  const nl = (s) => esc(s).replace(/\n/g, "<br>");
+  const ANG = { dor: "Dor", desejo: "Desejo", transformacao: "Transformação", identificacao: "Identificação", prova_social: "Prova social", autoridade: "Autoridade", curiosidade: "Curiosidade", mecanismo_novo: "Mecanismo novo", oferta_preco: "Oferta / preço", urgencia_escassez: "Urgência", medo_perda: "Medo de perder", quebra_objecao: "Quebra de objeção", contraste: "Contraste", historia: "História" };
+  const TG = { pergunta: "pergunta", afirmacao_chocante: "afirmação chocante", numero: "número", identificacao: "identificação", contradicao: "contradição", promessa: "promessa", historia: "história", chamada_publico: "chamada do público", objecao: "objeção", curiosidade: "curiosidade" };
+  const cor = (n) => n >= 85 ? ["#34D399", "Fit altíssimo"] : n >= 65 ? ["#38E1C6", "Fit alto"] : n >= 40 ? ["#FBBF24", "Fit médio"] : ["#FB7185", "Fit baixo"];
+  const fmtData = (iso) => iso ? new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "";
+  const formatoDe = (x) => (x.cards?.length > 1 || x.formato === "carousel") ? "carrossel" : (x.midias[0]?.tipo || (x.formato === "video" ? "video" : "imagem"));
+
+  // ----- Cabeçalho -----
+  const nome = D.produto?.nome || D.produto?.id || "seu produto";
+  $("#sub").textContent = `${nome} · coleta de ${fmtData(D.coleta)}`;
+  $("#meta").innerHTML = [D.pais && `<span class="chip rounded-full px-2.5 py-1">${esc(D.pais)}</span>`, `<span class="chip rounded-full px-2.5 py-1">${esc(D.modelo)}</span>`].filter(Boolean).join("");
+  $("#titulo").textContent = `${ADS.length} anúncios validados no seu nicho`;
+  $("#lead").innerHTML = `Mineramos <b class="text-ink">${D.total_minerado}</b> anúncios por <i>${(D.termos || []).map(esc).join("</i>, <i>")}</i>, ficamos com os que estão no ar há mais tempo e a IA avaliou o fit de cada um com <b class="text-ink">${esc(nome)}</b>.`;
+
+  const comA = ADS.filter((x) => x.analise);
+  const fits = comA.map((x) => x.analise.fit);
+  const media = fits.length ? Math.round(fits.reduce((s, n) => s + n, 0) / fits.length) : 0;
+  const diasOrd = ADS.map((x) => x.dias).sort((a, b) => a - b);
+  const mediana = diasOrd.length ? diasOrd[Math.floor(diasOrd.length / 2)] : 0;
+  const kpis = [
+    ["Minerados", D.total_minerado, "anúncios coletados"],
+    ["Criativos únicos", D.criativos_unicos, "depois dos filtros"],
+    ["Selecionados", ADS.length, "ativos há mais tempo"],
+    ["Mediana no ar", mediana + "d", `máx. ${diasOrd.at(-1) ?? 0} dias`],
+    ["Fit médio", media, "de 0 a 100"],
+    ["Fit alto", fits.filter((f) => f >= 65).length, "prontos para modelar"],
+  ];
+  $("#kpis").innerHTML = kpis.map(([t, v, s], i) => `
+    <div class="glass fade-in rounded-2xl border border-line p-4" style="animation-delay:${i * 50}ms">
+      <p class="text-[11px] font-medium uppercase tracking-wider text-mute">${t}</p>
+      <p class="mt-1.5 font-mono text-2xl font-bold sm:text-3xl">${v}</p>
+      <p class="mt-0.5 text-xs text-mute">${s}</p>
+    </div>`).join("");
+
+  // ----- Resumo -----
+  const R = D.resumo;
+  const lista = (arr, icone) => (arr || []).map((t) => `<li class="flex gap-2.5"><span class="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${icone}"></span><span>${esc(t)}</span></li>`).join("");
+  $("#resumo").innerHTML = R ? `
+    <div class="mb-4 flex items-center gap-2">
+      <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15 text-accent"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.8 20 12 16.5 7.2 20 9 13.6 4 10l6.1-1.2z"/></svg></span>
+      <h2 class="text-sm font-semibold">Leitura estratégica da IA</h2>
+    </div>
+    <p class="text-[15px] leading-relaxed text-ink/90">${esc(R.panorama)}</p>
+    <div class="mt-5 grid gap-5 sm:grid-cols-2">
+      <div><p class="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Padrões que se repetem</p><ul class="space-y-1.5 text-sm text-ink/85">${lista(R.padroes, "bg-accent")}</ul></div>
+      <div><p class="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Oportunidades</p><ul class="space-y-1.5 text-sm text-ink/85">${lista(R.oportunidades, "bg-accent2")}</ul></div>
+    </div>
+    <div class="mt-5">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Ganchos para testar</p>
+      <div class="flex flex-wrap gap-2">${(R.ganchos_para_testar || []).map((g) => `<button data-copiar="${esc(g)}" class="chip group rounded-xl px-3 py-2 text-left text-sm hover:border-accent/50">“${esc(semAspas(g))}” <span class="ml-1 text-xs text-mute group-hover:text-accent">copiar</span></button>`).join("")}</div>
+    </div>
+    <div class="mt-5 rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm"><b class="text-accent">Próximo passo:</b> ${esc(R.recomendacao)}</div>`
+  : `<h2 class="text-sm font-semibold">Leitura estratégica da IA</h2><p class="mt-2 text-sm text-mute">Sem resumo nesta curadoria.</p>`;
+
+  // ----- Filtros -----
+  const estado = { q: "", fit: 0, formato: "", angulo: "", ordem: "fit" };
+  const contAng = {};
+  comA.forEach((x) => (contAng[x.analise.angulo] = (contAng[x.analise.angulo] || 0) + 1));
+  const maxAng = Math.max(1, ...Object.values(contAng));
+  function desenharAngulos() {
+    $("#angulos").innerHTML = Object.entries(contAng).sort((a, b) => b[1] - a[1]).map(([k, n]) => `
+      <button data-angulo="${k}" class="group block w-full text-left">
+        <div class="mb-1 flex justify-between text-xs"><span class="${estado.angulo === k ? "text-ink font-semibold" : "text-ink/80"}">${ANG[k] || k}</span><span class="font-mono text-mute">${n}</span></div>
+        <div class="h-2 overflow-hidden rounded-full bg-white/5"><div class="h-full rounded-full transition-all ${estado.angulo && estado.angulo !== k ? "opacity-30" : ""}" style="width:${(n / maxAng) * 100}%;background:linear-gradient(90deg,#8B7CFF,#38E1C6)"></div></div>
+      </button>`).join("") || `<p class="text-sm text-mute">Sem análises.</p>`;
+  }
+  const faixas = Array.from({ length: 10 }, (_, i) => fits.filter((f) => Math.min(9, Math.floor(f / 10)) === i).length);
+  const maxF = Math.max(1, ...faixas);
+  $("#distfit").innerHTML = faixas.map((n, i) => `<div class="flex-1 rounded-t-md" title="${i * 10}–${i * 10 + 9}: ${n}" style="height:${Math.max(4, (n / maxF) * 100)}%;background:${cor(i * 10 + 5)[0]};opacity:${n ? 0.85 : 0.15}"></div>`).join("");
+
+  const FITS = [[0, "Todos"], [40, "40+"], [65, "65+"], [85, "85+"]];
+  function desenharChips() {
+    $("#fitchips").innerHTML = FITS.map(([v, t]) => `<button data-fit="${v}" class="chip ${estado.fit === v ? "chip-on" : "text-mute"} rounded-xl px-3 py-2 text-sm">${t}</button>`).join("");
+  }
+
+  // ----- Cards -----
+  function midiaHTML(x, i) {
+    const m = x.midias;
+    if (!m.length) return `<div class="flex h-full items-center justify-center text-sm text-mute">Sem mídia</div>`;
+    const item = (md, j) => md.tipo === "video"
+      ? `<video data-slide="${j}" class="${j ? "hidden" : ""} h-full w-full object-contain bg-black" src="${esc(md.url)}" ${md.poster ? `poster="${esc(md.poster)}"` : ""} controls playsinline preload="none" referrerpolicy="no-referrer" onerror="midiaQuebrada(this)"></video>`
+      : `<img data-slide="${j}" class="${j ? "hidden" : ""} h-full w-full object-contain" src="${esc(md.url)}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="midiaQuebrada(this)">`;
+    const nav = m.length > 1 ? `
+      <button data-nav="-1" class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 backdrop-blur hover:bg-black/80"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button data-nav="1" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 backdrop-blur hover:bg-black/80"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
+      <span data-pos class="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 font-mono text-[10px] backdrop-blur">1/${m.length}</span>` : "";
+    return m.map(item).join("") + nav;
+  }
+
+  function cardHTML(x, i) {
+    const an = x.analise;
+    const [c, nivel] = an ? cor(an.fit) : ["#8A90A6", "Sem análise"];
+    const circ = 2 * Math.PI * 22;
+    const formato = formatoDe(x);
+    const fotoPagina = x.pagina_foto ? `<img src="${esc(x.pagina_foto)}" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full border border-line object-cover" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'h-9 w-9 rounded-full bg-raised',textContent:''}))">` : `<div class="h-9 w-9 rounded-full bg-raised"></div>`;
+    return `
+    <article class="card fade-in flex flex-col overflow-hidden rounded-2xl border border-line bg-surface" style="animation-delay:${Math.min(i, 12) * 40}ms">
+      <div data-midia class="group relative aspect-[4/5] bg-black/60">
+        ${midiaHTML(x, i)}
+        <div class="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-1.5">
+          <span class="rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold backdrop-blur"><span class="font-mono">${x.dias}</span> dias no ar</span>
+          ${x.versoes > 1 ? `<span class="rounded-full bg-black/65 px-2.5 py-1 text-[11px] backdrop-blur"><span class="font-mono">${x.versoes}</span> versões</span>` : ""}
+        </div>
+        <span class="pointer-events-none absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[11px] capitalize backdrop-blur">${formato}</span>
+      </div>
+
+      <div class="flex flex-1 flex-col p-4 sm:p-5">
+        <div class="flex items-center gap-3">
+          ${fotoPagina}
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold">${esc(x.pagina)}</p>
+            <p class="flex items-center gap-1.5 truncate text-xs text-mute">${x.ativo ? `<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent2 pulse"></span>Ativo desde ${fmtData(x.inicio)}` : `Saiu do ar em ${fmtData(x.fim)}`}${x.dominio ? ` · ${esc(x.dominio)}` : ""}</p>
+          </div>
+        </div>
+
+        ${x.titulo ? `<h3 class="mt-4 text-[15px] font-semibold leading-snug">${esc(x.titulo)}</h3>` : ""}
+        ${x.texto ? `<div class="copy clamp-6 mt-2 text-sm leading-relaxed text-ink/80">${nl(x.texto)}</div><button data-mais class="mt-1 self-start text-xs font-medium text-accent hover:underline">Ler copy completa</button>` : ""}
+        ${x.cta ? `<div class="mt-3"><span class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-raised px-3 py-1.5 text-xs font-semibold">${esc(x.cta)} <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>` : ""}
+
+        ${an ? `
+        <div class="mt-4 rounded-xl border p-4" style="border-color:${c}33;background:linear-gradient(180deg,${c}12,transparent)">
+          <div class="flex items-center gap-3.5">
+            <svg viewBox="0 0 52 52" class="h-14 w-14 shrink-0 -rotate-90">
+              <circle cx="26" cy="26" r="22" fill="none" stroke-width="5" class="ring-track"/>
+              <circle cx="26" cy="26" r="22" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - an.fit / 100)}"/>
+              <text x="26" y="26" transform="rotate(90 26 26)" text-anchor="middle" dominant-baseline="central" fill="#fff" font-family="JetBrains Mono" font-weight="700" font-size="15">${an.fit}</text>
+            </svg>
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold uppercase tracking-wider" style="color:${c}">Insight da IA · ${nivel}</p>
+              <p class="mt-0.5 text-sm font-semibold leading-snug">${esc(an.angulo_nome)}</p>
+              <p class="text-xs text-mute">${ANG[an.angulo] || an.angulo} · oferta ${an.potencial_oferta}/100</p>
+            </div>
+          </div>
+          <p class="mt-3 text-sm leading-relaxed text-ink/85">${esc(an.estrategia)}</p>
+          <p class="mt-2 text-xs leading-relaxed text-mute"><b class="text-ink/70">Por que esse fit:</b> ${esc(an.fit_motivo)}</p>
+          <details class="group mt-3">
+            <summary class="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-accent">Ver análise completa <svg viewBox="0 0 24 24" class="h-3 w-3 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <div class="mt-3 space-y-3 text-sm">
+              <div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Gancho · ${esc(TG[an.tipo_gancho] || an.tipo_gancho)}</p><p class="mt-1 italic text-ink/85">“${esc(semAspas(an.gancho))}”</p></div>
+              <div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Estrutura da copy</p>
+                <ol class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">${an.estrutura.map((p, k) => `<li class="chip rounded-md px-2 py-1">${k + 1}. ${esc(p)}</li>`).join("")}</ol></div>
+              <div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Gatilhos</p><div class="mt-1.5 flex flex-wrap gap-1.5">${an.gatilhos.map((g) => `<span class="rounded-md bg-accent/10 px-2 py-1 text-xs text-accent">${esc(g)}</span>`).join("")}</div></div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Público</p><p class="mt-1 text-ink/80">${esc(an.publico)}</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Promessa</p><p class="mt-1 text-ink/80">${esc(an.promessa)}</p></div>
+              </div>
+              ${an.oferta ? `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-mute">Oferta</p><p class="mt-1 text-ink/80">${esc(an.oferta)}</p></div>` : ""}
+              <div class="rounded-lg border border-accent2/25 bg-accent2/5 p-3"><p class="text-[11px] font-semibold uppercase tracking-wider text-accent2">Como adaptar para ${esc(nome)}</p><p class="mt-1 text-ink/85">${esc(an.como_adaptar)}</p>
+                <button data-copiar="${esc(an.gancho_adaptado)}" class="mt-2 block w-full rounded-md bg-black/30 px-3 py-2 text-left text-sm italic hover:bg-black/50">“${esc(semAspas(an.gancho_adaptado))}” <span class="not-italic text-xs text-mute">copiar</span></button></div>
+              ${an.alerta ? `<div class="rounded-lg border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-200"><b>Atenção:</b> ${esc(an.alerta)}</div>` : ""}
+            </div>
+          </details>
+        </div>` : ""}
+
+        <div class="mt-auto flex items-center gap-2 pt-4 text-xs">
+          <a href="${esc(x.link)}" target="_blank" rel="noopener noreferrer" class="flex-1 rounded-lg border border-line px-3 py-2 text-center font-medium hover:border-accent/50 hover:text-white">Ver na Biblioteca</a>
+          ${x.destino ? `<a href="${esc(x.destino)}" target="_blank" rel="noopener noreferrer" class="flex-1 rounded-lg bg-white/[.06] px-3 py-2 text-center font-medium hover:bg-white/10">Página de venda</a>` : ""}
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function filtrados() {
+    const q = estado.q.toLowerCase();
+    let l = ADS.filter((x) => {
+      const an = x.analise;
+      if (estado.fit && (!an || an.fit < estado.fit)) return false;
+      if (estado.formato && formatoDe(x) !== estado.formato) return false;
+      if (estado.angulo && an?.angulo !== estado.angulo) return false;
+      if (q && ![x.pagina, x.titulo, x.texto, x.dominio, an?.angulo_nome, an?.estrategia, an?.gancho].join(" ").toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const k = { fit: (x) => x.analise?.fit ?? -1, dias: (x) => x.dias, versoes: (x) => x.versoes, oferta: (x) => x.analise?.potencial_oferta ?? -1 }[estado.ordem];
+    return l.sort((a, b) => k(b) - k(a) || b.dias - a.dias);
+  }
+
+  function render() {
+    const l = filtrados();
+    $("#grid").innerHTML = l.map(cardHTML).join("");
+    $("#vazio").classList.toggle("hidden", l.length > 0);
+    $("#contagem").textContent = `${l.length} de ${ADS.length}`;
+    $("#limpar").classList.toggle("hidden", !(estado.q || estado.fit || estado.formato || estado.angulo));
+    desenharChips();
+    desenharAngulos();
+    // Copy curta não precisa do "ler mais".
+    document.querySelectorAll("#grid .copy").forEach((el) => { if (el.scrollHeight <= el.clientHeight + 2) el.nextElementSibling?.remove(); });
+  }
+
+  // ----- Eventos -----
+  $("#busca").addEventListener("input", (e) => { estado.q = e.target.value; render(); });
+  $("#formato").addEventListener("change", (e) => { estado.formato = e.target.value; render(); });
+  $("#ordem").addEventListener("change", (e) => { estado.ordem = e.target.value; render(); });
+  $("#limpar").addEventListener("click", () => { Object.assign(estado, { q: "", fit: 0, formato: "", angulo: "" }); $("#busca").value = ""; $("#formato").value = ""; render(); });
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.fit !== undefined) { estado.fit = Number(t.dataset.fit); render(); }
+    else if (t.dataset.angulo) { estado.angulo = estado.angulo === t.dataset.angulo ? "" : t.dataset.angulo; render(); $("#grid").scrollIntoView({ behavior: "smooth", block: "start" }); }
+    else if (t.hasAttribute("data-mais")) { const c = t.previousElementSibling; const aberto = c.classList.toggle("clamp-6"); t.textContent = aberto ? "Ler copy completa" : "Mostrar menos"; }
+    else if (t.dataset.copiar) { navigator.clipboard?.writeText(t.dataset.copiar).catch(() => {}); const s = t.querySelector("span"); if (s) { const o = s.textContent; s.textContent = "copiado ✓"; setTimeout(() => (s.textContent = o), 1400); } }
+    else if (t.dataset.nav) {
+      const box = t.closest("[data-midia]"); const slides = [...box.querySelectorAll("[data-slide]")];
+      const atual = slides.findIndex((s) => !s.classList.contains("hidden"));
+      const prox = (atual + Number(t.dataset.nav) + slides.length) % slides.length;
+      slides[atual].classList.add("hidden"); slides[atual].pause?.(); slides[prox].classList.remove("hidden");
+      box.querySelector("[data-pos]").textContent = `${prox + 1}/${slides.length}`;
+    }
+  });
+  render();
+})();
+</script>
+</body>
+</html>
