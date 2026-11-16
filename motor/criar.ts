@@ -94,6 +94,9 @@ historico.copy = historico.copy.filter(Boolean);
 // Núcleo aprovado: a ficha traz a copy do produto que já funcionou (mecanismo, entregáveis, slogan, CTA)
 // e a criação varia só o começo (ângulo, ganchos, promessa e número), para testar ganchos contra o mesmo corpo.
 const nucleo = Boolean(produto.nucleo_aprovado);
+// chamada_publico: como o anúncio chama o público logo no começo (ex.: ["nutricionista", "nutri"]).
+const sem = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const chamada: string[] = (produto.chamada_publico ?? []).map((c: string) => sem(c));
 const palavrasMax = Math.floor((teto - 1.5 - 7 * 0.3 - 1.5) * (produto.ritmo_fala ?? 2.8));
 
 const SISTEMA = `Você é redator de anúncios em vídeo (Reels, Stories e Feed) para infoprodutos de baixo preço, em português do Brasil.
@@ -101,7 +104,7 @@ Seu trabalho é criar ÂNGULOS, GANCHOS e COPY novos para um produto, a partir s
 
 Como pensar:
 - Ângulo é a porta de entrada: uma dor, um desejo, uma objeção, um inimigo comum, uma identidade ou um custo escondido do público. Cada ângulo da rodada deve partir de uma base diferente e, se possível, de um nível de consciência diferente.
-- Gancho são os 3 primeiros segundos: precisa fazer a pessoa do público parar. Use tipos diferentes entre os ganchos do mesmo ângulo (identificação, número, contradição, pergunta, cena reconhecível, objeção, curiosidade). Concreto vence genérico: uma cena do dia a dia, um número, uma frase que a pessoa já disse.
+- Gancho são os 3 primeiros segundos: precisa fazer a pessoa do público parar. Quando a ficha traz "chamada_publico", o gancho chama o público por esse nome logo nas primeiras palavras, na fala e na tela (ex.: "Nutricionista, ..."). Use tipos diferentes entre os ganchos do mesmo ângulo (identificação, número, contradição, pergunta, cena reconhecível, objeção, curiosidade). Concreto vence genérico: uma cena do dia a dia, um número, uma frase que a pessoa já disse.
 - A copy de cada ângulo conta UMA história curta: dor → situação em que ela pesa (promessa que não se cumpre, número que dói) → virada (mecanismo do produto) → o que a pessoa recebe → slogan em 3 batidas → pergunta final e chamada. A copy deve conversar com o ângulo; não reaproveite a mesma copy entre ângulos.
 - Escreva como se fala: frases curtas, sem jargão de marketing, sem exagero.
 
@@ -209,7 +212,13 @@ function validar(r: TResposta): Problema[] {
     r.angulos.slice(0, i).forEach((outro) => parecido(an.dor, outro.dor) >= 0.6 && e(`Ângulo parecido com "${outro.id}" desta mesma rodada.`));
     an.ganchos.forEach((g, j) => {
       if (/\d/.test(g.texto)) e(`Número em algarismo no gancho "${g.texto}".`, j);
-      if (g.linhas.length < 2 || g.linhas.length > 4) e("O gancho precisa de 2 a 4 linhas na tela.", j);
+      if (g.linhas.length < 2 || g.linhas.length > 5) e("O gancho precisa de 2 a 5 linhas na tela.", j);
+      // Chamada do público: quem é a pessoa precisa aparecer logo no começo da fala e da tela.
+      if (chamada.length) {
+        const inicio = (t: string) => sem(t).split(/\s+/).slice(0, 5).join(" ");
+        if (!chamada.some((c) => inicio(g.texto).includes(c))) e(`O gancho não chama o público nas primeiras palavras (${produto.chamada_publico.join(" / ")}).`, j);
+        if (!chamada.some((c) => sem(g.linhas.slice(0, 2).join(" ")).includes(c))) e("A chamada do público precisa aparecer nas primeiras linhas da tela.", j);
+      }
       if (g.linhas.some((l) => l.length > 26)) e("Linha do gancho longa demais para a tela (máx. 26 caracteres).", j);
       if (!contem(g.linhas, g.marca)) e(`O destaque "${g.marca}" não está nas linhas do gancho.`, j);
       for (const h of historico.ganchos) if (parecido(g.texto, h) >= 0.5) e(`Gancho parecido com um já usado: "${h}".`, j);
