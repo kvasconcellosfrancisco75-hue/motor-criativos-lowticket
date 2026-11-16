@@ -56,7 +56,8 @@ Cada gancho gera uma variação, então é aqui que se testa mais.
 |---|---|
 | `visual.cores` | `claro`, `escuro`, `destaque` e `texto`, em hexadecimal. Cada cena usa um tom: claro, escuro ou destaque. |
 | `visual.fontes` | Fonte dos títulos e da citação. Já vêm instaladas a Bricolage Grotesque e a Instrument Serif. |
-| `personagem` | Poses ligadas a arquivos em `ativos/`: `neutra`, `confiante`, `frustrada` e `apontando`. Se faltar uma pose, a cena fica sem personagem. |
+| `personagem` | Poses ligadas a arquivos em `ativos/`: `neutra`, `confiante`, `frustrada`, `pensando`, `apontando` e `comemorando`. Se faltar uma pose, a cena fica sem personagem. |
+| `personagem_por_angulo` | Troca poses só num ângulo: `{ "id-do-angulo": { "neutra": "arquivo.png" } }`. Serve para a pose combinar com o gancho daquele ângulo. |
 | `ativos.prova_video` | Vídeo de prova em `ativos/` (por exemplo, a gravação de tela do produto). Se estiver vazio, a cena vira um contador. |
 
 ## Cuidados

@@ -26,8 +26,13 @@ export const mesclar = (base: any, extra: any): any => {
   return out;
 };
 
-/** O produto visto por um ângulo: a ficha com a copy daquele ângulo aplicada. */
-export const produtoDoAngulo = (produto: any, angulo: any) => mesclar(produto, angulo.copy ?? {});
+/** O produto visto por um ângulo: a ficha com a copy daquele ângulo aplicada.
+ *  "personagem_por_angulo" na ficha troca poses só naquele ângulo (ex.: { "outro-nicho": { "neutra": "dancinha.png" } }). */
+export const produtoDoAngulo = (produto: any, angulo: any) => {
+  const p = mesclar(produto, angulo.copy ?? {});
+  const poses = produto.personagem_por_angulo?.[angulo.id];
+  return poses ? { ...p, personagem: { ...(p.personagem ?? {}), ...poses } } : p;
+};
 
 const preencherSeguro = (m: string, ctx: any) => {
   try {
