@@ -6,6 +6,9 @@
  *   [--termos "a,b,c"]   troca os termos da ficha
  *   [--total 100]        quantos anúncios coletar no total (padrão: inteligencia.total ou 100)
  *   [--pais BR]          país da busca (ALL = todos)
+ *   [--qualquer-ordem]   aceita as palavras em qualquer ordem (mais resultados, mais ruído)
+ *
+ * Rodar de novo no mesmo dia SOMA à coleta do dia (sem repetir anúncios), para completar com outros termos.
  *
  * Saída em <produto>/inteligencia/<aaaa-mm-dd>/:
  *   brutos.json    exatamente o que o Actor devolveu (referência)
@@ -15,6 +18,7 @@
  * os primeiros de cada busca são os que mais estão sendo entregues hoje.
  * Custo: o Actor cobra por anúncio (cerca de US$ 0,75 a cada 1.000) na sua conta do Apify.
  */
+import fs from "node:fs";
 import path from "node:path";
 import { ApifyClient } from "apify-client";
 import { normalizar } from "./anuncio";
@@ -47,7 +51,7 @@ const urlBusca = (termo: string) => {
     media_type: midia,
     q: termo,
     // keyword_exact_phrase busca a frase exata (menos ruído); keyword_unordered aceita as palavras em qualquer ordem.
-    search_type: cfg.frase_exata === false ? "keyword_unordered" : "keyword_exact_phrase",
+    search_type: cfg.frase_exata === false || a["qualquer-ordem"] ? "keyword_unordered" : "keyword_exact_phrase",
     "sort_data[direction]": "desc",
     "sort_data[mode]": "total_impressions",
   });
@@ -91,13 +95,24 @@ async function main() {
   for (let i = 0; brutos.length < total && [...porUrl.values()].some((l) => l.length > i); i++)
     for (const l of porUrl.values()) if (l[i] && brutos.length < total) brutos.push(l[i]);
 
-  salvarJSON(path.join(saida, "brutos.json"), brutos);
-  const anuncios = brutos.map((b) => normalizar(b)).filter(Boolean);
-  salvarJSON(path.join(saida, "anuncios.json"), { produto: produto.id, coletado_em: new Date().toISOString(), pais, termos, run: run.id, anuncios });
+  // Soma à coleta do mesmo dia, sem repetir anúncios.
+  const arqBrutos = path.join(saida, "brutos.json");
+  const arqAnuncios = path.join(saida, "anuncios.json");
+  const antes = fs.existsSync(arqAnuncios) ? lerJSON(arqAnuncios) : undefined;
+  const brutosAntes: any[] = fs.existsSync(arqBrutos) ? lerJSON(arqBrutos) : [];
+  const idDe = (b: any) => String(b.ad_archive_id ?? b.adArchiveID ?? b.id ?? "");
+  const vistos = new Set(brutosAntes.map(idDe));
+  const novos = brutos.filter((b) => !vistos.has(idDe(b)));
+  const todosBrutos = [...brutosAntes, ...novos];
+  salvarJSON(arqBrutos, todosBrutos);
+  const anuncios = todosBrutos.map((b) => normalizar(b)).filter(Boolean);
+  const todosTermos = [...new Set([...(antes?.termos ?? []), ...termos])];
+  salvarJSON(arqAnuncios, { produto: produto.id, coletado_em: new Date().toISOString(), pais, termos: todosTermos, runs: [...(antes?.runs ?? (antes?.run ? [antes.run] : [])), run.id], anuncios });
+  if (antes) console.log(`\nSomado à coleta de hoje: ${novos.length} anúncios novos (${brutos.length - novos.length} já estavam lá).`);
 
   const porBusca = new Map<string, number>();
   for (const x of anuncios) porBusca.set(x!.termo, (porBusca.get(x!.termo) ?? 0) + 1);
-  console.log(`\n${anuncios.length} anúncios coletados (o Actor entregou ${items.length}; ele cobra por anúncio entregue).`);
+  console.log(`\n${anuncios.length} anúncios na coleta de hoje; esta rodada trouxe ${brutos.length} (o Actor entregou ${items.length}; ele cobra por anúncio entregue).`);
   for (const [t, n] of porBusca) console.log(`  ${String(n).padStart(3)}  ${t}`);
   console.log(`\nDados brutos: ${path.join(saida, "brutos.json")}`);
   console.log(`Agora: npm run curadoria -- --produto ${a.produto}`);

@@ -12,6 +12,7 @@ minerar (Apify) ─► brutos.json + anuncios.json ─► curadoria (IA) ─► 
 ```bash
 npm run minerar   -- --produto <pasta>   # ~100 anúncios por impressões, pelos termos da ficha
 npm run curadoria -- --produto <pasta>   # seleciona 30, analisa com a IA e gera o report.html
+npm run minerar   -- --produto <pasta> --qualquer-ordem --termos "a,b"   # completa a coleta do dia com outros termos
 npm run relatorio -- --curadoria <pasta>/inteligencia/<data>/curadoria.json   # só refaz o HTML
 ```
 
