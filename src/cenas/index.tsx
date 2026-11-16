@@ -37,6 +37,13 @@ const caber = (linhas: string[], max: number, largura = 920) => {
 };
 /** Altura da personagem nas cenas com texto em cima: alta o bastante para encostar no texto. */
 const ALTURA_PERSONAGEM = 1150;
+/** Nas cenas em que o texto desce mais (número grande, citação longa), a personagem é menor para não cobri-lo. */
+const ALTURA_PERSONAGEM_BAIXA = 940;
+/** Número grande do contador: cabe na largura contando o separador de milhar e o prefixo. */
+const tamanhoNumero = (n: number, prefixo = "") => {
+  const largura = (prefixo + Math.round(n).toLocaleString("pt-BR")).length;
+  return Math.min(420, Math.floor(940 / (largura * 0.62)));
+};
 
 const passo = (dur: number, n: number) => Math.max(4, Math.min(18, Math.floor((dur * 0.5) / Math.max(1, n))));
 
@@ -77,7 +84,7 @@ const CenaCitacao: React.FC<P> = ({ cena, dur }) => {
         style={{
           fontFamily: t.fonteCitacao,
           fontStyle: "italic",
-          fontSize: Math.round(190 * Math.max(s, 0.78)),
+          fontSize: Math.round((str(cena.dados.citacao).length > 22 ? 150 : 190) * Math.max(s, 0.78)),
           lineHeight: 1.0,
           marginTop: 40,
           color: c.destaque,
@@ -88,7 +95,7 @@ const CenaCitacao: React.FC<P> = ({ cena, dur }) => {
       >
         “{str(cena.dados.citacao)}”
       </div>
-      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" />
+      <Personagem arquivo={cena.personagem} altura={str(cena.dados.citacao).length > 22 ? ALTURA_PERSONAGEM_BAIXA : ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" />
       <Efeito em={meio} som="pop" volume={0.55} />
     </AbsoluteFill>
   );
@@ -107,12 +114,12 @@ const CenaContador: React.FC<P> = ({ cena, dur }) => {
         </Titulo>
       )}
       <div style={{ display: "flex", alignItems: "flex-end", gap: 28, marginTop: 10, flexWrap: "wrap" }}>
-        <Contagem id={`n${num(cena.dados.numero)}`} ate={num(cena.dados.numero)} prefixo={str(cena.dados.prefixo)} delay={meio} dur={20} tamanho={num(cena.dados.tamanho, 420)} cor={c.destaque} />
+        <Contagem id={`n${num(cena.dados.numero)}`} ate={num(cena.dados.numero)} prefixo={str(cena.dados.prefixo)} delay={meio} dur={20} tamanho={num(cena.dados.tamanho) || tamanhoNumero(num(cena.dados.numero), str(cena.dados.prefixo))} cor={c.destaque} />
         <Titulo delay={meio + 10} tamanho={104} cor={c.texto} style={{ paddingBottom: 30 }}>
           {str(cena.dados.depois)}
         </Titulo>
       </div>
-      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
+      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM_BAIXA} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
       <Efeito em={meio} som="pop" volume={0.6} />
     </AbsoluteFill>
   );
@@ -300,10 +307,10 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
   const marca = str(cena.dados.marca);
   return (
     <AbsoluteFill style={{ ...pad, justifyContent: fase < fases.length && cena.personagem ? "flex-start" : "center" }}>
-      {fase < fases.length && <Personagem arquivo={cena.personagem} altura={1000} delay={6} lado="direita" />}
+      {fase < fases.length && <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={6} lado="direita" />}
       {fase < fases.length &&
         fases[fase].map((l, i) => (
-          <Titulo key={`${fase}-${i}`} delay={fase * faseDur + 2 + i * 8} tamanho={caber(fases[fase], cena.personagem ? 150 : 180)} cor={c.texto} style={{ lineHeight: 1.04 }}>
+          <Titulo key={`${fase}-${i}`} delay={fase * faseDur + 2 + i * 8} tamanho={caber(fases[fase], cena.personagem ? 165 : 190, 980)} cor={c.texto} style={{ lineHeight: 1.04 }}>
             <FraseComMarca texto={l} marca={marca} delay={fase * faseDur + 8 + i * 8} tom={cena.tom ?? "escuro"} />
           </Titulo>
         ))}
