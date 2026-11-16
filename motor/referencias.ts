@@ -11,7 +11,8 @@
  *  - tempo no ar: ninguém mantém por semanas um anúncio que dá prejuízo;
  *  - versões: "N anúncios usam este criativo e texto" indica que o anunciante está escalando;
  *  - ainda ativo: continua funcionando hoje;
- *  - mesmo público: o que vale para o nicho do produto pesa mais do que um nicho vizinho.
+ *  - mesmo público: o que vale para o nicho do produto pesa mais do que um nicho vizinho;
+ *  - coletas: em quantas coletas seguidas (npm run coletar) o anúncio apareceu ativo.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -31,12 +32,13 @@ export type Referencia = {
   transcricao: string;
   cta: string;
   observacao?: string;
+  coletas: number;
   dias: number;
   nota: number;
   nivel: "validado" | "promissor" | "fraco";
 };
 
-const COLUNAS = ["link", "anunciante", "inicio", "fim", "ativo", "versoes", "formato", "duracao_s", "publico", "gancho", "transcricao", "cta", "observacao"];
+const COLUNAS = ["link", "anunciante", "inicio", "fim", "ativo", "versoes", "formato", "duracao_s", "publico", "gancho", "transcricao", "cta", "observacao", "coletas"];
 
 /** Data no formato dd/mm/aaaa ou aaaa-mm-dd. */
 const data = (s: string) => {
@@ -47,17 +49,23 @@ const data = (s: string) => {
   return d;
 };
 
+/** Número de uma célula da planilha; vazio ou inválido vira o padrão. */
+const num = (v: string | undefined, padrao: number) => (v && Number.isFinite(Number(v)) ? Number(v) : padrao);
+
 export function pontuar(linha: Record<string, string>, hoje = new Date()): Referencia {
   const ativo = /^(s|sim|true|1|ativo)$/i.test(linha.ativo ?? "");
   const fim = ativo || !linha.fim ? hoje : data(linha.fim);
   const dias = Math.max(0, Math.round((fim.getTime() - data(linha.inicio).getTime()) / 86400000));
-  const versoes = Math.max(1, Number(linha.versoes || 1));
+  const versoes = Math.max(1, num(linha.versoes, 1));
   const publico = (["mesmo", "vizinho", "outro"].includes(linha.publico) ? linha.publico : "vizinho") as Referencia["publico"];
   // Nota de 0 a 100: tempo no ar pesa mais, depois escala (versões), depois se ainda roda e se é o mesmo público.
   const tempo = Math.min(1, Math.log1p(dias) / Math.log1p(90)) * 50;
   const escala = Math.min(1, Math.log1p(versoes - 1) / Math.log1p(10)) * 25;
-  const nota = Math.round(tempo + escala + (ativo ? 10 : 0) + { mesmo: 15, vizinho: 8, outro: 0 }[publico]);
-  const nivel = (dias >= 60 || (dias >= 30 && versoes >= 3)) && ativo ? "validado" : dias >= 21 ? "promissor" : "fraco";
+  const coletas = Math.max(1, num(linha.coletas, 1));
+  // Seguir ativo em várias coletas seguidas soma até 10 pontos (nota máxima continua 100).
+  const persistencia = Math.min(1, (coletas - 1) / 3) * 10;
+  const nota = Math.min(100, Math.round(tempo + escala + (ativo ? 10 : 0) + { mesmo: 15, vizinho: 8, outro: 0 }[publico] + persistencia));
+  const nivel = ativo && (dias >= 60 || (dias >= 30 && (versoes >= 3 || coletas >= 3))) ? "validado" : dias >= 21 ? "promissor" : "fraco";
   return {
     link: linha.link,
     anunciante: linha.anunciante,
@@ -66,12 +74,13 @@ export function pontuar(linha: Record<string, string>, hoje = new Date()): Refer
     ativo,
     versoes,
     formato: linha.formato || "video",
-    duracao_s: linha.duracao_s ? Number(linha.duracao_s) : undefined,
+    duracao_s: num(linha.duracao_s, 0) || undefined,
     publico,
     gancho: linha.gancho ?? "",
     transcricao: linha.transcricao ?? "",
     cta: linha.cta ?? "",
     observacao: linha.observacao || undefined,
+    coletas,
     dias,
     nota,
     nivel,

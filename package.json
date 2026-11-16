@@ -10,7 +10,8 @@
     "conferir": "tsx motor/conferir.ts",
     "studio": "remotion studio src/index.ts",
     "tipos": "tsc --noEmit",
-    "referencias": "tsx motor/referencias.ts"
+    "referencias": "tsx motor/referencias.ts",
+    "coletar": "tsx motor/coletar.ts"
   },
   "license": "MIT",
   "dependencies": {
@@ -18,6 +19,7 @@
     "@fontsource/bricolage-grotesque": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
     "@remotion/cli": "^4.0.543",
+    "apify-client": "^2.26.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.543",

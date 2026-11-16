@@ -21,7 +21,37 @@ O motor dá uma nota de 0 a 100 e classifica cada referência:
 - **promissor:** 21+ dias no ar;
 - **fraco:** o resto (pode ser só um teste do anunciante).
 
-## Como coletar
+## Coleta automática pelo Apify
+
+O `npm run coletar` roda um Actor do Apify com as buscas da ficha e já preenche a planilha.
+A coleta roda nos servidores do Apify, na sua conta: o uso é cobrado por resultado e segue os termos da Meta e do Apify.
+
+```json
+"busca": {
+  "termos": ["roteiros de reels", "pack de reels"],
+  "pais": "BR",
+  "so_ativos": true,
+  "so_video": true,
+  "so_infoproduto": true,
+  "limite_por_termo": 50,
+  "dias_minimos": 21,
+  "transcrever_max": 15,
+  "palavras_publico": ["nutri"]
+}
+```
+
+- **Busque pela oferta, não pelo público.** "nutricionista" traz posts de consultório; "roteiros de reels" traz quem vende algo parecido.
+- `so_infoproduto` mantém só os anúncios que levam a uma plataforma de venda (Hotmart, Kiwify, Cakto...). Para incluir páginas próprias, liste os domínios em `dominios_oferta`.
+- Os vídeos dos mais fortes são baixados e transcritos (Whisper): o gancho é a fala dos primeiros segundos, não a legenda.
+- Cada coleta fica em `<produto>/coletas/`. Rodando toda semana, quem segue ativo ganha pontos.
+- Se o Actor usar outros nomes de entrada, ajuste em `busca.entrada` (veja a página do Actor). Também dá para exportar o resultado no painel do Apify e usar `--de-arquivo dados.json`.
+
+```bash
+APIFY_TOKEN=... npm run coletar -- --produto <pasta>
+npm run referencias -- --produto <pasta>
+```
+
+## Coleta manual
 
 1. Na biblioteca, escolha **Brasil**, **Todos os anúncios** e pesquise por palavras do nicho e da oferta
    (por exemplo, "roteiros", "reels", "pack", "nutricionista", "instagram para nutricionistas").
