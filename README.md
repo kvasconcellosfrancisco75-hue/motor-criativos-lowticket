@@ -27,6 +27,7 @@ fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─
 ### Fórmulas incluídas
 
 - **`dor-situacao-solucao-cta`**: uma história só. Gancho de dor, a promessa que não se cumpre ("toda semana você jura…"), um número que dói, a solução, a prova, um slogan em três batidas e o CTA. Sem preço no vídeo: a legenda e a página cuidam da oferta.
+- **`comparacao-prova-oferta`**: gancho, dois prints lado a lado sobre o mesmo tema (sem formato × com formato), a virada, o número do produto, o preço e o CTA. Pede o campo `comparacao` na ficha.
 - **`numero-lista-oferta`**: gancho de dor, o número do produto logo no começo, a lista do que a pessoa recebe, o diferencial, a oferta com preço e garantia, e o CTA.
 
 ## Começando

@@ -27,7 +27,8 @@ export type TipoCena =
   | "prova-video"
   | "batidas"
   | "preco"
-  | "cta";
+  | "cta"
+  | "comparacao";
 
 /** Uma cena já resolvida (sem {{variáveis}}), pronta para renderizar. */
 export type Cena = {

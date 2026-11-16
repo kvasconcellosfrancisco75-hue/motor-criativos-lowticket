@@ -368,6 +368,48 @@ const CtaPersonagem: React.FC<{ arquivo: string; delay: number }> = ({ arquivo, 
   );
 };
 
+
+/** comparacao: dois prints lado a lado (ex.: reel sem formato × reel com formato), o segundo entra depois. */
+const LadoComparacao: React.FC<{ l: Record<string, unknown>; i: number; atraso: number; altura: number; s: number }> = ({ l, i, atraso, altura, s }) => {
+  const t = useTema();
+  const p = usePop(atraso, 13);
+  const ok = Boolean(l.ok);
+  const img = str(l.img);
+  return (
+    <div style={{ width: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: Math.round(22 * s), opacity: Math.min(1, p * 2), transform: `translateY(${r((1 - p) * 80)}px) rotate(${i ? 2 : -2}deg) scale(${r(0.85 + 0.15 * p)})` }}>
+      <div style={{ width: "100%", height: altura, borderRadius: 36, overflow: "hidden", border: `6px solid ${ok ? t.texto : "#9aa39c"}`, boxShadow: ok ? `14px 14px 0 ${t.texto}` : "0 20px 50px rgba(0,0,0,.18)", background: "#ddd" }}>
+        {img && <img src={staticFile(img)} style={{ width: "100%", height: "100%", objectFit: "cover", filter: ok ? "none" : "saturate(.75)" }} />}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 26px", borderRadius: 999, background: ok ? t.destaque : "#ffd9c7", color: t.texto, fontFamily: t.fonteTitulo, fontWeight: 800, fontSize: Math.round(46 * Math.max(s, 0.8)), letterSpacing: "-0.02em", border: `4px solid ${t.texto}`, whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: "1.1em", lineHeight: 1 }}>{ok ? "✓" : "✕"}</span>
+        {str(l.rotulo)}
+      </div>
+    </div>
+  );
+};
+const CenaComparacao: React.FC<P> = ({ cena, dur }) => {
+  const pad = usePad();
+  const c = useCores(cena.tom ?? "claro");
+  const s = useEscala();
+  const lados = [cena.dados.esquerda, cena.dados.direita].map((x) => (x && typeof x === "object" ? (x as Record<string, unknown>) : {}));
+  const atraso = [4, Math.max(14, Math.round(dur * 0.42))];
+  const altura = Math.round(Math.min(784, 900 * s));
+  return (
+    <AbsoluteFill style={{ ...pad, justifyContent: "center", gap: Math.round(36 * s) }}>
+      {str(cena.dados.titulo) && (
+        <Titulo delay={1} tamanho={Math.round(96 * Math.max(s, 0.8))} cor={c.texto}>
+          <FraseComMarca texto={str(cena.dados.titulo)} marca={str(cena.dados.marca)} delay={4} tom={cena.tom ?? "claro"} />
+        </Titulo>
+      )}
+      <div style={{ display: "flex", gap: 40, justifyContent: "center" }}>
+        {lados.map((l, i) => <LadoComparacao key={i} l={l} i={i} atraso={atraso[i]} altura={altura} s={s} />)}
+      </div>
+      <Efeito em={atraso[0]} som="pop" volume={0.35} />
+      <Efeito em={atraso[1]} som="pop" volume={0.5} />
+    </AbsoluteFill>
+  );
+};
+
 export const CENAS: Record<TipoCena, React.FC<P>> = {
   titulo: CenaTitulo,
   citacao: CenaCitacao,
@@ -377,4 +419,5 @@ export const CENAS: Record<TipoCena, React.FC<P>> = {
   batidas: CenaBatidas,
   preco: CenaPreco,
   cta: CenaCTA,
+  comparacao: CenaComparacao,
 };

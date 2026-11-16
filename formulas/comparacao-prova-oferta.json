@@ -1,0 +1,73 @@
+{
+  "id": "comparacao-prova-oferta",
+  "nome": "Gancho → comparação lado a lado → virada → oferta → CTA",
+  "descricao": "A prova em dois prints reais sobre o mesmo tema: um reel sem formato e um reel com formato validado. Depois o produto, o preço e a chamada.",
+  "cenas": [
+    {
+      "tipo": "titulo",
+      "fala": "{{gancho.texto}}",
+      "tom": "claro",
+      "personagem": "neutra",
+      "dados": {
+        "linhas": "{{gancho.linhas}}",
+        "marca": "{{gancho.marca}}"
+      }
+    },
+    {
+      "tipo": "comparacao",
+      "fala": "{{produto.comparacao.fala}}",
+      "tom": "claro",
+      "dados": {
+        "titulo": "{{produto.comparacao.titulo}}",
+        "marca": "{{produto.comparacao.marca}}",
+        "esquerda": "{{produto.comparacao.esquerda}}",
+        "direita": "{{produto.comparacao.direita}}"
+      }
+    },
+    {
+      "tipo": "titulo",
+      "fala": "{{produto.mecanismo.fala}}",
+      "tom": "destaque",
+      "dados": {
+        "linhas": "{{produto.mecanismo.linhas}}",
+        "marca": "{{produto.marca}}"
+      }
+    },
+    {
+      "tipo": "prova-video",
+      "fala": "{{produto.entregaveis.fala}}",
+      "tom": "destaque",
+      "dados": {
+        "antes": "{{produto.entregaveis.antes}}",
+        "numero": "{{produto.entregaveis.quantidade}}",
+        "prefixo": "{{produto.entregaveis.prefixo}}",
+        "depois": "{{produto.entregaveis.unidade_frase}}",
+        "marca": "{{produto.entregaveis.marca}}",
+        "video": "{{produto.ativos.prova_video}}"
+      }
+    },
+    {
+      "tipo": "preco",
+      "fala": "{{produto.oferta.fala}}",
+      "tom": "destaque",
+      "dados": {
+        "valor": "{{produto.oferta.valor}}",
+        "moeda": "{{produto.oferta.moeda}}",
+        "de": "{{produto.oferta.de}}",
+        "selos": "{{produto.oferta.selos}}"
+      }
+    },
+    {
+      "tipo": "cta",
+      "fala": "{{produto.cta.fala}}",
+      "tom": "escuro",
+      "personagem": "apontando",
+      "dados": {
+        "pergunta": "{{produto.cta.pergunta}}",
+        "complemento": "{{produto.cta.complemento}}",
+        "marca": "{{produto.cta.marca}}",
+        "botao": "{{produto.cta.botao}}"
+      }
+    }
+  ]
+}

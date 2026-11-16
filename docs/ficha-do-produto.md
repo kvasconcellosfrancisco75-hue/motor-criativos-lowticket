@@ -48,6 +48,7 @@ Cada gancho gera uma variação, então é aqui que se testa mais.
 | `oferta` | Preço, moeda, preço "de", selos, frase falada e textos da legenda. |
 | `titulo_anuncio` | Título do anúncio. |
 | `cta` | Pergunta final em linhas, complemento opcional, palavra marcada, texto do botão e a fala. |
+| `comparacao` | Para a fórmula `comparacao-prova-oferta`: `{ "fala", "titulo", "marca", "esquerda": { "img", "rotulo", "ok": false }, "direita": { "img", "rotulo", "ok": true } }`. As imagens ficam em `ativos/` (por exemplo, o print de um reel sem formato e o do reel original do formato). |
 
 ## Visual e ativos
 
