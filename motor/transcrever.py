@@ -19,6 +19,11 @@ from faster_whisper import WhisperModel
 GANCHO_S = 3.5
 
 
+def tem_audio(video: Path) -> bool:
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0", str(video)], capture_output=True, text=True)
+    return bool(r.stdout.strip())
+
+
 def audio16(video: Path, tmp: Path) -> np.ndarray:
     wav = tmp / "a.wav"
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(wav)], check=True)
@@ -31,6 +36,10 @@ def main(saida: str, *videos: str) -> None:
     out = {}
     for v in videos:
         try:
+            if not tem_audio(Path(v)):
+                out[v] = {"gancho": "", "texto": "", "sem_audio": True}
+                print(f"--  {Path(v).name}: sem faixa de áudio (só imagem e texto na tela)")
+                continue
             with tempfile.TemporaryDirectory() as tmp:
                 dados = audio16(Path(v), Path(tmp))
             segs, _ = m.transcribe(dados, language="pt", word_timestamps=True, vad_filter=True, condition_on_previous_text=False)

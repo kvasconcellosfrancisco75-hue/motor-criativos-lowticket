@@ -114,13 +114,13 @@ async function rodarActor(): Promise<any[]> {
   return items;
 }
 
+// Baixa com o curl, que respeita HTTPS_PROXY (o fetch do Node ignora proxy de rede).
 async function baixar(url: string, destino: string) {
-  if (fs.existsSync(destino)) return true;
-  const r = await fetch(url);
-  if (!r.ok) return false;
+  if (fs.existsSync(destino) && fs.statSync(destino).size > 0) return true;
   fs.mkdirSync(path.dirname(destino), { recursive: true });
-  fs.writeFileSync(destino, Buffer.from(await r.arrayBuffer()));
-  return true;
+  const r = spawnSync("curl", ["-sfL", "--max-time", "120", "-o", destino, url]);
+  if (r.status !== 0) fs.rmSync(destino, { force: true });
+  return r.status === 0;
 }
 
 async function main() {
@@ -149,7 +149,7 @@ async function main() {
 
   // Em quantas coletas (contando esta) cada anúncio apareceu ativo.
   const ativoEm = new Map<string, number>();
-  for (const f of fs.readdirSync(pastaColetas).filter((f) => f.endsWith(".json"))) {
+  for (const f of fs.readdirSync(pastaColetas).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))) {
     const vistos = new Set<string>();
     for (const b of lerJSON(path.join(pastaColetas, f))) {
       const n = normalizar(b);
@@ -185,11 +185,17 @@ async function main() {
   const maxTranscrever = busca.transcrever_max ?? 15;
   if (!a["sem-transcricao"]) {
     const videos: string[] = [];
+    const bloqueados = new Set<string>();
     for (const x of escolhidos.filter((x) => x.video).slice(0, maxTranscrever)) {
       const arq = path.join(pastaColetas, "videos", `${x.id}.mp4`);
       if (await baixar(x.video!, arq).catch(() => false)) videos.push(arq);
-      else console.log(`  não consegui baixar o vídeo de ${x.link}`);
+      else {
+        console.log(`  não consegui baixar o vídeo de ${x.link}`);
+        bloqueados.add(new URL(x.video!).hostname);
+      }
     }
+    // Os vídeos vêm de servidores regionais (video-xxx.xx.fbcdn.net) que mudam a cada coleta.
+    if (bloqueados.size) console.log(`  Se a rede bloqueia downloads, libere estes servidores (ou *.fbcdn.net): ${[...bloqueados].join(", ")}`);
     if (videos.length) {
       const saida = path.join(pastaColetas, `${diaHoje}.falas.json`);
       const py = process.env.PYTHON ?? "python3";
@@ -226,7 +232,7 @@ async function main() {
       gancho: limpar(f?.gancho || x.texto.split(/(?<=[.?!])\s/)[0]),
       transcricao: limpar(f?.texto ?? ""),
       cta: x.cta,
-      observacao: limpar(`destino: ${x.destino.replace(/^https?:\/\//, "").split(/[/?]/)[0]} — ${f?.texto ? `legenda: ${x.texto.slice(0, 160)}` : "sem fala transcrita, gancho = 1ª frase da legenda"}`),
+      observacao: limpar(`destino: ${x.destino.replace(/^https?:\/\//, "").split(/[/?]/)[0]} — ${f?.texto ? `legenda: ${x.texto.slice(0, 160)}` : (f as any)?.sem_audio ? "vídeo sem áudio, gancho = 1ª frase da legenda" : "sem fala transcrita, gancho = 1ª frase da legenda"}`),
       coletas: ativoEm.get(x.texto ? chave(x) : x.criativo) ?? 1,
     };
     return COLUNAS.map((c) => v[c] ?? "").join(";");
