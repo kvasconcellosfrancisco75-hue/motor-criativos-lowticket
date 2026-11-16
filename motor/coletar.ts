@@ -5,6 +5,7 @@
  *   npm run coletar -- --produto <pasta>                      # roda o Actor (precisa do token do Apify)
  *   npm run coletar -- --produto <pasta> --de-arquivo dados.json  # usa um conjunto exportado do Apify, sem API
  *   [--sem-transcricao]                                        # não baixa nem transcreve os vídeos
+ *   [--termos "a,b"] [--limite 15]                             # troca os termos e o limite da ficha (para testes baratos)
  *
  * A busca fica na ficha, em "busca" (veja docs/referencias.md). A coleta roda nos servidores do Apify,
  * na sua conta: o uso é cobrado por resultado e segue os termos da Meta e do Apify.
@@ -59,6 +60,10 @@ const dataBR = (v: any) => {
   const d = typeof v === "number" ? new Date(v < 1e12 ? v * 1000 : v) : new Date(v);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 };
+const dataNum = (br: string) => {
+  const [d, m, y] = br.split("/").map(Number);
+  return br ? new Date(y, m - 1, d).getTime() : Infinity;
+};
 const limpar = (s: any) => String(s ?? "").replace(/[;\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 
 type Anuncio = { id: string; criativo: string; link: string; destino: string; anunciante: string; inicio: string; fim: string; ativo: boolean; versoes: number; formato: string; texto: string; cta: string; video?: string };
@@ -90,9 +95,18 @@ async function rodarActor(): Promise<any[]> {
   // O token pode vir de APIFY_TOKEN ou ser injetado pelo ambiente nas chamadas a api.apify.com.
   const client = new ApifyClient({ token: process.env.APIFY_TOKEN ?? "injetado-pelo-ambiente" });
   const actor = busca.actor ?? "apify/facebook-ads-scraper";
-  const urls = busca.termos.map((t: string) => ({ url: urlBusca(t) }));
-  // Os nomes da entrada variam entre Actors: confira na página do Actor e ajuste em "busca.entrada".
-  const entrada = { startUrls: urls, resultsLimit: busca.limite_por_termo ?? 50, ...(busca.entrada ?? {}) };
+  const termos: string[] = a.termos ? a.termos.split(",").map((t) => t.trim()) : busca.termos;
+  const urls = termos.map((t) => ({ url: urlBusca(t) }));
+  // Só anúncios que já estavam no ar antes de (hoje - dias_minimos): não se paga por anúncio novo demais.
+  const corte = new Date(hoje.getTime() - (busca.dias_minimos ?? 21) * 86400000).toISOString().slice(0, 10);
+  // Entrada do apify/facebook-ads-scraper. Outro Actor pode usar outros nomes: ajuste em "busca.entrada".
+  const entrada = {
+    startUrls: urls,
+    resultsLimit: Number(a.limite ?? busca.limite_por_termo ?? 50),
+    sorting: busca.ordenar ?? "total_impressions",
+    onlyAdsOlderThan: corte,
+    ...(busca.entrada ?? {}),
+  };
   console.log(`Rodando ${actor} com ${urls.length} busca(s)...`);
   const run = await client.actor(actor).call(entrada);
   if (run.status !== "SUCCEEDED") throw new Error(`O Actor terminou com status ${run.status}. Veja o log no painel do Apify.`);
@@ -113,14 +127,25 @@ async function main() {
   const brutos = a["de-arquivo"] ? lerJSON(path.resolve(a["de-arquivo"])) : await rodarActor();
   salvarJSON(path.join(pastaColetas, `${diaHoje}.json`), brutos);
 
-  // Uma linha por criativo: as versões do mesmo criativo viram uma só.
-  const porCriativo = new Map<string, Anuncio>();
+  // Uma linha por criativo. Além do agrupamento da própria biblioteca (collationId), junta anúncios do mesmo
+  // anunciante com o mesmo texto: é o mesmo criativo rodando em vários anúncios, sinal de que está escalando.
+  const chave = (n: Anuncio) => `${n.anunciante.toLowerCase()}|${n.texto.toLowerCase().replace(/\W+/g, "").slice(0, 120)}`;
+  const grupos = new Map<string, { melhor: Anuncio; ids: Set<string>; versoes: number }>();
   for (const b of Array.isArray(brutos) ? brutos : []) {
     const n = normalizar(b);
     if (!n) continue;
-    const atual = porCriativo.get(n.criativo);
-    if (!atual || n.versoes > atual.versoes) porCriativo.set(n.criativo, n);
+    const k = n.texto ? chave(n) : n.criativo;
+    const g = grupos.get(k);
+    if (!g) grupos.set(k, { melhor: n, ids: new Set([n.criativo]), versoes: n.versoes });
+    else {
+      g.ids.add(n.criativo);
+      g.versoes = Math.max(g.versoes, n.versoes);
+      // Fica com o mais antigo (mais tempo no ar) como representante.
+      if (dataNum(n.inicio) < dataNum(g.melhor.inicio)) g.melhor = n;
+    }
   }
+  const porCriativo = new Map<string, Anuncio>();
+  for (const [k, g] of grupos) porCriativo.set(k, { ...g.melhor, versoes: Math.max(g.versoes, g.ids.size) });
 
   // Em quantas coletas (contando esta) cada anúncio apareceu ativo.
   const ativoEm = new Map<string, number>();
@@ -128,19 +153,22 @@ async function main() {
     const vistos = new Set<string>();
     for (const b of lerJSON(path.join(pastaColetas, f))) {
       const n = normalizar(b);
-      if (n?.ativo) vistos.add(n.criativo);
+      if (n?.ativo) vistos.add(n.texto ? chave(n) : n.criativo);
     }
     for (const c of vistos) ativoEm.set(c, (ativoEm.get(c) ?? 0) + 1);
   }
 
-  // Só infoprodutos: o anúncio precisa levar a uma plataforma de venda (ou a um domínio da lista da ficha).
-  // Sem isso, um termo como "nutricionista" traz posts impulsionados de consultório, não ofertas.
-  const PLATAFORMAS = ["hotmart", "kiwify", "eduzz", "monetizze", "cakto", "ticto", "perfectpay", "greenn", "kirvano", "lastlink", "braip", "yampi", "pay."];
-  const dominios: string[] = busca.dominios_oferta ?? (busca.so_infoproduto === false ? [] : PLATAFORMAS);
-  const ehOferta = (x: Anuncio) => !dominios.length || dominios.some((d) => x.destino.toLowerCase().includes(d.toLowerCase()));
-  const descartados = [...porCriativo.values()].filter((x) => !ehOferta(x)).length;
+  // Só ofertas: descarta anúncios que levam a conversa, perfil ou loja de apps (posts impulsionados, serviços).
+  // Infoprodutores costumam usar página própria, então não dá para exigir Hotmart, Kiwify etc.
+  // Com "busca.dominios_oferta", só entram anúncios que levam a um desses domínios.
+  const NAO_OFERTA = ["whatsapp.com", "wa.me", "instagram.com", "facebook.com", "fb.me", "m.me", "t.me", "itunes.apple.com", "apps.apple.com", "play.google.com", "maps.google", "tiktok.com"];
+  const dest = (x: Anuncio) => x.destino.toLowerCase();
+  const ehOferta = (x: Anuncio) =>
+    busca.so_infoproduto === false ||
+    (busca.dominios_oferta?.length ? busca.dominios_oferta.some((d: string) => dest(x).includes(d.toLowerCase())) : !!x.destino && !NAO_OFERTA.some((d) => dest(x).includes(d)));
+  const descartados = [...porCriativo.values()].filter((x) => !ehOferta(x));
   for (const [k, x] of porCriativo) if (!ehOferta(x)) porCriativo.delete(k);
-  if (descartados) console.log(`${descartados} criativo(s) descartados por não levarem a uma página de venda (busca.dominios_oferta).`);
+  if (descartados.length) console.log(`${descartados.length} criativo(s) descartados por não levarem a uma página de venda (WhatsApp, perfil, app ou sem link).`);
 
   const diasMin = busca.dias_minimos ?? 21;
   const dias = (x: Anuncio) => {
@@ -199,7 +227,7 @@ async function main() {
       transcricao: limpar(f?.texto ?? ""),
       cta: x.cta,
       observacao: limpar(`destino: ${x.destino.replace(/^https?:\/\//, "").split(/[/?]/)[0]} — ${f?.texto ? `legenda: ${x.texto.slice(0, 160)}` : "sem fala transcrita, gancho = 1ª frase da legenda"}`),
-      coletas: ativoEm.get(x.criativo) ?? 1,
+      coletas: ativoEm.get(x.texto ? chave(x) : x.criativo) ?? 1,
     };
     return COLUNAS.map((c) => v[c] ?? "").join(";");
   });

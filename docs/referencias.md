@@ -41,7 +41,7 @@ A coleta roda nos servidores do Apify, na sua conta: o uso é cobrado por result
 ```
 
 - **Busque pela oferta, não pelo público.** "nutricionista" traz posts de consultório; "roteiros de reels" traz quem vende algo parecido.
-- `so_infoproduto` mantém só os anúncios que levam a uma plataforma de venda (Hotmart, Kiwify, Cakto...). Para incluir páginas próprias, liste os domínios em `dominios_oferta`.
+- `so_infoproduto` descarta anúncios que levam a WhatsApp, perfil do Instagram, loja de apps ou a lugar nenhum: são posts impulsionados e serviços, não ofertas. Para aceitar só domínios específicos, liste-os em `dominios_oferta`.
 - Os vídeos dos mais fortes são baixados e transcritos (Whisper): o gancho é a fala dos primeiros segundos, não a legenda.
 - Cada coleta fica em `<produto>/coletas/`. Rodando toda semana, quem segue ativo ganha pontos.
 - Se o Actor usar outros nomes de entrada, ajuste em `busca.entrada` (veja a página do Actor). Também dá para exportar o resultado no painel do Apify e usar `--de-arquivo dados.json`.
