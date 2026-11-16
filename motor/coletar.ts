@@ -64,6 +64,7 @@ const dataNum = (br: string) => {
   const [d, m, y] = br.split("/").map(Number);
   return br ? new Date(y, m - 1, d).getTime() : Infinity;
 };
+const sem = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const limpar = (s: any) => String(s ?? "").replace(/[;\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 
 type Anuncio = { id: string; criativo: string; link: string; destino: string; anunciante: string; inicio: string; fim: string; ativo: boolean; versoes: number; formato: string; texto: string; cta: string; video?: string };
@@ -169,6 +170,14 @@ async function main() {
   const descartados = [...porCriativo.values()].filter((x) => !ehOferta(x));
   for (const [k, x] of porCriativo) if (!ehOferta(x)) porCriativo.delete(k);
   if (descartados.length) console.log(`${descartados.length} criativo(s) descartados por não levarem a uma página de venda (WhatsApp, perfil, app ou sem link).`);
+
+  // Assunto: com "busca.relevancia", só entram anúncios cuja legenda cita um desses termos. Legenda vazia ou
+  // montada por catálogo ({{product.brand}}) não dá para julgar: fica, e a transcrição decide depois.
+  const termosAssunto: string[] = (busca.relevancia ?? []).map((t: string) => sem(t));
+  const sobreOAssunto = (x: Anuncio) => !termosAssunto.length || !x.texto || x.texto.includes("{{") || termosAssunto.some((t) => sem(x.texto).includes(t));
+  const foraDoAssunto = [...porCriativo.values()].filter((x) => !sobreOAssunto(x)).length;
+  for (const [k, x] of porCriativo) if (!sobreOAssunto(x)) porCriativo.delete(k);
+  if (foraDoAssunto) console.log(`${foraDoAssunto} criativo(s) descartados por não falarem do assunto (busca.relevancia).`);
 
   const diasMin = busca.dias_minimos ?? 21;
   const dias = (x: Anuncio) => {
