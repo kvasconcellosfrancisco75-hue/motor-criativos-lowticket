@@ -10,6 +10,8 @@ export const DIMENSOES: Record<Formato, { width: number; height: number }> = {
 export type Tom = "claro" | "escuro" | "destaque";
 
 /** Identidade visual do produto (vem de produto.json → visual). */
+export type OpcoesPersonagem = { escala?: number; lado?: "esquerda" | "direita" | "centro"; icone?: boolean };
+
 export type Tema = {
   claro: string;
   escuro: string;
@@ -39,6 +41,8 @@ export type Cena = {
   tom?: Tom;
   /** Arquivo de imagem da personagem, relativo à pasta de ativos do produto. */
   personagem?: string;
+  /** Ajustes da pose na ficha ({ "arquivo", "escala", "lado", "icone" }): tamanho, lado da tela e se é um ícone. */
+  personagemOpcoes?: OpcoesPersonagem;
   dados: Record<string, unknown>;
 };
 

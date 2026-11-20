@@ -11,7 +11,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type { Tema, Tom } from "./tipos";
+import type { OpcoesPersonagem, Tema, Tom } from "./tipos";
 import pop from "./sfx/pop.wav";
 import whoosh from "./sfx/whoosh.wav";
 import notif from "./sfx/notif.wav";
@@ -249,20 +249,23 @@ export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?
 };
 
 /** Personagem (imagem PNG transparente dos ativos do produto) entrando de baixo. */
-export const Personagem: React.FC<{ arquivo?: string; altura: number; delay?: number; lado?: "esquerda" | "direita" | "centro"; tremer?: boolean }> = ({
+export const Personagem: React.FC<{ arquivo?: string; altura: number; delay?: number; lado?: "esquerda" | "direita" | "centro"; tremer?: boolean; opcoes?: OpcoesPersonagem }> = ({
   arquivo,
   altura,
   delay = 0,
-  lado = "direita",
+  lado: ladoCena = "direita",
   tremer,
+  opcoes,
 }) => {
   const f = useCurrentFrame();
   const s = useEscala();
-  const escala = useTema().escalaPersonagem ?? 1;
+  const escalaTema = useTema().escalaPersonagem ?? 1;
+  const escala = opcoes?.escala ?? escalaTema;
+  const lado = opcoes?.lado ?? ladoCena;
   const p = usePop(delay, 10);
   if (!arquivo) return null;
   // Ícone (escala < 1): imagem quadrada, menor e acima da borda, em vez de uma personagem de corpo inteiro.
-  const icone = escala < 1;
+  const icone = opcoes?.icone ?? (opcoes?.escala === undefined && escalaTema < 1);
   const h = altura * s * escala;
   const t = Math.max(0, f - delay);
   const flutua = Math.sin(t / 14) * 8;

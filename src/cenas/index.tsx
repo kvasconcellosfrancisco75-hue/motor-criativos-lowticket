@@ -20,7 +20,7 @@ import {
   usePop,
   useTema,
 } from "../comum";
-import type { Cena, TipoCena } from "../tipos";
+import type { Cena, OpcoesPersonagem, TipoCena } from "../tipos";
 
 type P = { cena: Cena; dur: number };
 const str = (v: unknown, padrao = "") => (typeof v === "string" ? v : padrao);
@@ -61,7 +61,7 @@ const CenaTitulo: React.FC<P> = ({ cena, dur }) => {
           <FraseComMarca texto={l} marca={marca} delay={8 + i * k} tom={cena.tom} />
         </Titulo>
       ))}
-      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={4 + k} lado="direita" />
+      <Personagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} altura={ALTURA_PERSONAGEM} delay={4 + k} lado="direita" />
       <Efeito em={2} som="pop" volume={0.4} />
     </AbsoluteFill>
   );
@@ -95,7 +95,7 @@ const CenaCitacao: React.FC<P> = ({ cena, dur }) => {
       >
         “{str(cena.dados.citacao)}”
       </div>
-      <Personagem arquivo={cena.personagem} altura={str(cena.dados.citacao).length > 22 ? ALTURA_PERSONAGEM_BAIXA : ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" />
+      <Personagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} altura={str(cena.dados.citacao).length > 22 ? ALTURA_PERSONAGEM_BAIXA : ALTURA_PERSONAGEM} delay={meio + 4} lado="direita" />
       <Efeito em={meio} som="pop" volume={0.55} />
     </AbsoluteFill>
   );
@@ -119,7 +119,7 @@ const CenaContador: React.FC<P> = ({ cena, dur }) => {
           {str(cena.dados.depois)}
         </Titulo>
       </div>
-      <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM_BAIXA} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
+      <Personagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} altura={ALTURA_PERSONAGEM_BAIXA} delay={meio + 4} lado="direita" tremer={Boolean(cena.dados.tremer)} />
       <Efeito em={meio} som="pop" volume={0.6} />
     </AbsoluteFill>
   );
@@ -225,7 +225,7 @@ const CenaBatidas: React.FC<P> = ({ cena, dur }) => {
       {palavras.map((_, i) => (
         <Efeito key={i} em={3 + i * k} som="pop" volume={0.55} />
       ))}
-      <Personagem arquivo={cena.personagem} altura={1050} delay={3 + palavras.length * k} lado="centro" />
+      <Personagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} altura={1050} delay={3 + palavras.length * k} lado="centro" />
     </AbsoluteFill>
   );
 };
@@ -307,7 +307,7 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
   const marca = str(cena.dados.marca);
   return (
     <AbsoluteFill style={{ ...pad, justifyContent: fase < fases.length && cena.personagem ? "flex-start" : "center" }}>
-      {fase < fases.length && <Personagem arquivo={cena.personagem} altura={ALTURA_PERSONAGEM} delay={6} lado="direita" />}
+      {fase < fases.length && <Personagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} altura={ALTURA_PERSONAGEM} delay={6} lado="direita" />}
       {fase < fases.length &&
         fases[fase].map((l, i) => (
           <Titulo key={`${fase}-${i}`} delay={fase * faseDur + 2 + i * 8} tamanho={caber(fases[fase], cena.personagem ? 165 : 190, 980)} cor={c.texto} style={{ lineHeight: 1.04 }}>
@@ -316,7 +316,7 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
         ))}
       {fase >= fases.length && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          {cena.personagem && <CtaPersonagem arquivo={cena.personagem} delay={botaoEm - 2} />}
+          {cena.personagem && <CtaPersonagem arquivo={cena.personagem} opcoes={cena.personagemOpcoes} delay={botaoEm - 2} />}
           <div style={{ height: 24 * s }} />
           <Titulo delay={botaoEm} tamanho={96} cor={c.texto}>
             {str(cena.dados.chamada, "Toque em")}
@@ -357,8 +357,8 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
     </AbsoluteFill>
   );
 };
-const CtaPersonagem: React.FC<{ arquivo: string; delay: number }> = ({ arquivo, delay }) => {
-  const s = useEscala() * (useTema().escalaPersonagem ?? 1);
+const CtaPersonagem: React.FC<{ arquivo: string; delay: number; opcoes?: OpcoesPersonagem }> = ({ arquivo, delay, opcoes }) => {
+  const s = useEscala() * (opcoes?.escala ?? useTema().escalaPersonagem ?? 1);
   const p = usePop(delay, 10);
   return (
     <img

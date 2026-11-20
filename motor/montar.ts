@@ -47,7 +47,16 @@ export const montarCenas = (formula: any, produto: any, angulo: any, gancho: any
       const { requer, ...resto } = c;
       const cena = preencher(resto, ctx, `${formula.id}.cenas[${i}]`);
       if (cena.personagem && !p.personagem?.[cena.personagem]) delete cena.personagem;
-      else if (cena.personagem) cena.personagem = p.personagem[cena.personagem];
+      else if (cena.personagem) {
+        // A pose pode ser só o arquivo ou { "arquivo", "escala", "lado", "icone" }.
+        const pose = p.personagem[cena.personagem];
+        if (typeof pose === "string") cena.personagem = pose;
+        else {
+          const { arquivo, ...opcoes } = pose;
+          cena.personagem = arquivo;
+          cena.personagemOpcoes = opcoes;
+        }
+      }
       return cena;
     });
 };
