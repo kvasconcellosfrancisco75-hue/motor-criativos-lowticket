@@ -58,6 +58,7 @@ const tema: Tema = {
   texto: produto.visual.cores.texto,
   fonteTitulo: produto.visual.fontes?.titulo ?? "Bricolage Grotesque",
   fonteCitacao: produto.visual.fontes?.citacao ?? "Instrument Serif",
+  escalaPersonagem: produto.visual.escala_personagem,
 };
 
 const linhas: string[] = ["variacao;angulo;gancho;tipo_gancho;formula;formato;palavras;duracao_estimada_s"];

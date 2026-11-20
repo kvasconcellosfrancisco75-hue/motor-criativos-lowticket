@@ -258,20 +258,23 @@ export const Personagem: React.FC<{ arquivo?: string; altura: number; delay?: nu
 }) => {
   const f = useCurrentFrame();
   const s = useEscala();
+  const escala = useTema().escalaPersonagem ?? 1;
   const p = usePop(delay, 10);
   if (!arquivo) return null;
-  const h = altura * s;
+  // Ícone (escala < 1): imagem quadrada, menor e acima da borda, em vez de uma personagem de corpo inteiro.
+  const icone = escala < 1;
+  const h = altura * s * escala;
   const t = Math.max(0, f - delay);
   const flutua = Math.sin(t / 14) * 8;
   const giro = tremer ? Math.sin(t * 1.7) * 1.2 : Math.sin(t / 20);
   const pos: React.CSSProperties =
-    lado === "esquerda" ? { left: 60 } : lado === "centro" ? { left: "50%", marginLeft: `-${Math.round(h * 0.38)}px` } : { right: 60 };
+    lado === "esquerda" ? { left: 60 } : lado === "centro" ? { left: "50%", marginLeft: `-${Math.round(h * (icone ? 0.5 : 0.38))}px` } : { right: icone ? 90 : 60 };
   return (
     <Img
       src={staticFile(arquivo)}
       style={{
         position: "absolute",
-        bottom: -40 * s,
+        bottom: (icone ? 150 : -40) * s,
         height: h,
         ...pos,
         transformOrigin: "50% 100%",

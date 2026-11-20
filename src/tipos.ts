@@ -17,6 +17,8 @@ export type Tema = {
   texto: string;
   fonteTitulo: string;
   fonteCitacao: string;
+  /** Escala da imagem da personagem (ficha: visual.escala_personagem). Abaixo de 1, a imagem é tratada como ícone: quadrada e acima da borda. */
+  escalaPersonagem?: number;
 };
 
 export type TipoCena =

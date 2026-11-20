@@ -92,6 +92,7 @@ Cada gancho gera uma variação, então é aqui que se testa mais.
 |---|---|
 | `visual.cores` | `claro`, `escuro`, `destaque` e `texto`, em hexadecimal. Cada cena usa um tom: claro, escuro ou destaque. |
 | `visual.fontes` | Fonte dos títulos e da citação. Já vêm instaladas a Bricolage Grotesque e a Instrument Serif. |
+| `visual.escala_personagem` | Opcional. Abaixo de 1 (por exemplo `0.42`), as imagens de `personagem` viram ícones: quadrados, menores e acima da borda. Serve para usar ícones (de um banco de imagens ou do Canva) no lugar de uma personagem. |
 | `personagem` | Poses ligadas a arquivos em `ativos/`: `neutra`, `confiante`, `frustrada` e `apontando`. Se faltar uma pose, a cena fica sem personagem. |
 | `ativos.prova_video` | Vídeo de prova em `ativos/` (por exemplo, a gravação de tela do produto). Se estiver vazio, a cena vira um contador. |
 

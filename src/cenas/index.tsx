@@ -358,7 +358,7 @@ const CenaCTA: React.FC<P> = ({ cena, dur }) => {
   );
 };
 const CtaPersonagem: React.FC<{ arquivo: string; delay: number }> = ({ arquivo, delay }) => {
-  const s = useEscala();
+  const s = useEscala() * (useTema().escalaPersonagem ?? 1);
   const p = usePop(delay, 10);
   return (
     <img
