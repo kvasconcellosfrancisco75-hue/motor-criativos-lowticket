@@ -8,6 +8,12 @@
   "formatos": ["9x16", "4x5"],
   "formulas": ["dor-situacao-solucao-cta", "numero-lista-oferta"],
 
+  "mercado": {
+    "central": "saude",
+    "submercado": "alimentação prática",
+    "nicho": "quem trabalha fora, chega cansado e acaba no delivery",
+    "termos_nicho": ["receita", "cozinh", "comer", "comida", "jantar", "almoco", "marmita", "delivery", "cansad", "geladeira"]
+  },
   "publico": "pessoas que trabalham fora e querem comer melhor sem passar horas na cozinha",
   "promessa": "receitas prontas em até 15 minutos, com lista de compras",
   "restricoes": ["não prometer emagrecimento nem resultado de saúde", "sem antes e depois", "sem depoimento de resultado"],

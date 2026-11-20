@@ -22,6 +22,43 @@ Há um exemplo completo, de um produto fictício, em [`produtos/exemplo/produto.
 | `chamada_publico` | Como o anúncio chama o público logo no começo, por exemplo `["nutricionista", "nutri"]`. A criação recusa gancho que não traga um desses nomes nas primeiras palavras da fala e nas primeiras linhas da tela. |
 | `nucleo_aprovado` | `true` quando o produto já tem um corpo de anúncio que funciona. Mecanismo, entregáveis, slogan e CTA ficam fixos (vêm da ficha) e a criação varia só o começo: ângulo, gancho, promessa e número. Assim se testa gancho contra o mesmo corpo. |
 
+## Mercado, submercado e nicho (`mercado`)
+
+Segundo Russell Brunson (*DotCom Secrets*), toda compra nasce do desejo de melhorar uma de três áreas, os
+**mercados centrais**: saúde, dinheiro e relacionamento. Mas ninguém vende no nível do mercado
+("emagreça", "ganhe dinheiro"): ali todo mundo compete. Desce-se para um **submercado** e dali para um
+**nicho**, que é um público específico com um problema específico.
+
+```json
+"mercado": {
+  "central": "saude",
+  "submercado": "alimentação prática",
+  "nicho": "quem trabalha fora, chega cansado e acaba no delivery",
+  "termos_nicho": ["receita", "cozinh", "jantar", "delivery"]
+}
+```
+
+| Campo | Para que serve |
+|---|---|
+| `central` | `saude`, `dinheiro` ou `relacionamento`. Define os cuidados de política de anúncios que a criação segue e confere. |
+| `submercado`, `nicho` | Onde o produto compete. Entram nas instruções da criação para os ângulos saírem no nível do nicho. |
+| `termos_nicho` | Palavras do submercado e do nicho, sem acento (valem como prefixo: `cozinh` pega "cozinhar" e "cozinha"). Todo gancho precisa tocar um deles (ou a `chamada_publico`), e as referências que falam deles ganham até 10 pontos. |
+
+O que o motor faz com isso:
+
+- **Criação** (`npm run criar`): recusa ganchos e legendas genéricos de mercado ("renda extra", "perder peso", "reconquistar") e ganchos que não tocam o nicho.
+- **Política de anúncios**: em todos os mercados, recusa frases que afirmam atributo sensível de quem assiste ("você que está endividado"). Por mercado:
+
+| Mercado | O que a validação recusa |
+|---|---|
+| Saúde | Antes e depois, promessa de perda de peso ou medida, promessa de cura. |
+| Dinheiro | Promessa de ganho em valor ou prazo ("ganhe 5 mil por mês"), dinheiro fácil ou garantido. |
+| Relacionamento | Promessa de que a pessoa volta, promessa sobre o que o outro vai fazer. |
+
+- **Referências** (`npm run referencias`): anúncios do mesmo submercado sobem na nota e aparecem marcados em `referencias.md`.
+
+Fichas sem `mercado` continuam funcionando; só ficam sem essas conferências.
+
 ## Ângulos (`angulos[]`)
 
 Cada ângulo é uma dor do público. Dentro dele:

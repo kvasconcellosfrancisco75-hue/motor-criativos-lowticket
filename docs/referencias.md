@@ -14,6 +14,7 @@ A biblioteca não mostra vendas nem custo. Os sinais indiretos são:
 | Versões | "N anúncios usam este criativo e texto" | O anunciante está escalando aquele criativo. |
 | Ainda ativo | Selo "Ativo" | Continua funcionando hoje. |
 | Mesmo público | Pelo anunciante e pela oferta | O que funciona no seu nicho pesa mais. |
+| Mesmo submercado | Na fala ou na legenda (termos de `mercado.termos_nicho`) | Resolve o mesmo problema, não só o mesmo mercado central. Soma até 10 pontos. |
 
 O motor dá uma nota de 0 a 100 e classifica cada referência:
 

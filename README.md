@@ -13,7 +13,7 @@ fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─
 
 | Camada | Onde | O que faz |
 |---|---|---|
-| 1. Ficha do produto | `produtos/<id>/produto.json` | Público, dores, promessa, mecanismo, entregáveis, oferta, restrições, cores, personagem e ativos. É a raiz de tudo. |
+| 1. Ficha do produto | `produtos/<id>/produto.json` | Mercado central (saúde, dinheiro ou relacionamento), submercado e nicho, público, dores, promessa, mecanismo, entregáveis, oferta, restrições, cores, personagem e ativos. É a raiz de tudo. |
 | 2. Criação | `npm run criar` → `<produto>/criacoes/` | Gera ângulos, ganchos e copy novos a partir dos fatos. Lê tudo o que já foi criado e recusa repetições, números fora da ficha, falas longas demais e destaques que não aparecem na tela. Você aprova ou reprova cada item no `.json`. |
 | 3. Fórmulas | `formulas/*.json` | Moldes de roteiro com espaços `{{...}}` que a ficha preenche. |
 | 4. Cenas | `src/cenas` | Cenas animadas genéricas (título, citação, contador, lista, prova em vídeo, slogan, preço, CTA). Não sabem qual é o produto: cores e fontes vêm da ficha. |

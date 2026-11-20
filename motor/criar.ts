@@ -16,6 +16,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { lerReferencias } from "./referencias";
+import { falaDoNicho, genericosNo, instrucoesDeMercado, lerMercado, NOME, problemasDePolitica } from "./mercado";
 import { carregarFormulas, montarCenas, narracaoDe, segundosEstimados } from "./montar";
 import { args, contarPalavras, lerJSON, salvarJSON, slug } from "./util";
 
@@ -96,6 +97,9 @@ historico.copy = historico.copy.filter(Boolean);
 const nucleo = Boolean(produto.nucleo_aprovado);
 // chamada_publico: como o anúncio chama o público logo no começo (ex.: ["nutricionista", "nutri"]).
 const sem = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+// Mercado central (saúde, dinheiro ou relacionamento), submercado e nicho: ganchos no nível do nicho e cuidados de política do mercado.
+const mercado = lerMercado(produto);
+if (!mercado) console.log("Dica: a ficha não tem \"mercado\" (saude, dinheiro ou relacionamento → submercado → nicho). Veja docs/ficha-do-produto.md.");
 const chamada: string[] = (produto.chamada_publico ?? []).map((c: string) => sem(c));
 const palavrasMax = Math.floor((teto - 1.5 - 7 * 0.3 - 1.5) * (produto.ritmo_fala ?? 2.8));
 
@@ -118,7 +122,7 @@ Regras que não podem ser quebradas:
 - Slogan: exatamente 3 batidas curtas.
 - Duração: a narração inteira de um vídeo (gancho + promessa + número + mecanismo + entregáveis + slogan + CTA) deve ter no máximo ${palavrasMax} palavras, para caber em ${teto} segundos.
 - NÃO repita nem parafraseie de perto nada da lista "já usado". Variar sempre é o objetivo: ângulo, gancho e copy novos a cada rodada.
-
+${instrucoesDeMercado(mercado)}
 Quando o pedido trouxer "modelos que já provaram funcionar" (anúncios que estão há semanas no ar na Biblioteca de Anúncios):
 - Baseie cada ângulo em um modelo diferente e diga qual no campo "referencia" (o link) e o que aproveitou no campo "aproveita".
 - Aproveite o que fez o modelo funcionar: a estrutura, o tipo e a mecânica do gancho, a ordem das ideias, o ritmo, a virada. Adapte ao produto e ao público da ficha.
@@ -138,7 +142,7 @@ Já usado (não repetir):
 ${
   refs.length
     ? `Modelos que já provaram funcionar (do mais forte para o mais fraco):\n${refs
-        .map((r) => `- ${r.link} · ${r.dias} dias no ar · ${r.versoes} versão(ões) · público ${r.publico} · formato ${r.formato}${r.duracao_s ? ` · ${r.duracao_s} s` : ""}\n  Gancho: "${r.gancho}"\n  Transcrição: "${r.transcricao}"\n  CTA: "${r.cta}"${r.observacao ? `\n  Observação: ${r.observacao}` : ""}`)
+        .map((r) => `- ${r.link} · ${r.dias} dias no ar · ${r.versoes} versão(ões) · público ${r.publico}${r.submercado ? " · mesmo submercado" : ""} · formato ${r.formato}${r.duracao_s ? ` · ${r.duracao_s} s` : ""}\n  Gancho: "${r.gancho}"\n  Transcrição: "${r.transcricao}"\n  CTA: "${r.cta}"${r.observacao ? `\n  Observação: ${r.observacao}` : ""}`)
         .join("\n")}\n\n`
     : ""
 }${
@@ -205,6 +209,11 @@ function validar(r: TResposta): Problema[] {
       if (!contem(cp.cta.pergunta, cp.cta.marca)) e(`O destaque "${cp.cta.marca}" não está na pergunta do CTA.`);
       if (cp.slogan.palavras.length !== 3) e("O slogan precisa de exatamente 3 batidas.");
     }
+    // Política do mercado: tudo o que é dito ou escrito, menos a oferta (o preço é fato da ficha).
+    // (Os ganchos são conferidos um a um mais abaixo, para reprovar só o gancho e não o ângulo.)
+    const textos = [an.legenda_gancho, an.promessa.fala, an.numero.fala, ...(cp ? [cp.mecanismo.fala, cp.entregaveis.fala, cp.diferencial.fala, cp.slogan.fala, cp.cta.fala, cp.como_usar] : [])];
+    for (const t of textos) for (const msg of problemasDePolitica(t, mercado)) e(`Política de anúncios: "${t}" (${msg}).`);
+    if (mercado) for (const g of genericosNo(an.legenda_gancho, mercado)) e(`A legenda fala no nível do mercado ("${g}"): desça para o nicho.`);
     for (const proibida of produto.proibidas ?? []) for (const f of [...falas, an.legenda_gancho]) if (f.toLowerCase().includes(String(proibida).toLowerCase())) e(`Expressão proibida pela ficha: "${proibida}".`);
     for (const h of historico.angulos) if (parecido(an.dor, h) >= 0.6) e(`Ângulo parecido com um já usado: "${h}".`);
     for (const f of [...(cp ? [cp.mecanismo.fala, cp.slogan.fala, cp.cta.fala] : []), an.promessa.fala, an.numero.fala])
@@ -218,6 +227,14 @@ function validar(r: TResposta): Problema[] {
         const inicio = (t: string) => sem(t).split(/\s+/).slice(0, 5).join(" ");
         if (!chamada.some((c) => inicio(g.texto).includes(c))) e(`O gancho não chama o público nas primeiras palavras (${produto.chamada_publico.join(" / ")}).`, j);
         if (!chamada.some((c) => sem(g.linhas.slice(0, 2).join(" ")).includes(c))) e("A chamada do público precisa aparecer nas primeiras linhas da tela.", j);
+      }
+      for (const t of [g.texto, g.linhas.join(" ")]) for (const msg of problemasDePolitica(t, mercado)) e(`Política de anúncios: "${t}" (${msg}).`, j);
+      // Nível do nicho: gancho que serviria para qualquer produto do mercado não para ninguém.
+      if (mercado) {
+        const texto = `${g.texto} ${g.linhas.join(" ")}`;
+        for (const x of genericosNo(texto, mercado)) e(`Gancho genérico de mercado ("${x}"): mostre a pessoa do nicho numa situação concreta.`, j);
+        const termos = [...mercado.termos_nicho, ...chamada];
+        if (!falaDoNicho(texto, termos)) e(`O gancho não toca o nicho (${termos.join(", ")}).`, j);
       }
       if (g.linhas.some((l) => l.length > 26)) e("Linha do gancho longa demais para a tela (máx. 26 caracteres).", j);
       if (!contem(g.linhas, g.marca)) e(`O destaque "${g.marca}" não está nas linhas do gancho.`, j);
@@ -285,7 +302,8 @@ function salvar(r: TResposta, modelo: string, problemas: Problema[]) {
   salvarJSON(path.join(pastaCriacoes, `${nome}.json`), { produto: produto.id, criado_em: agora.toISOString(), modelo, angulos });
 
   const f = formulas[0];
-  const md = [`# ${produto.nome} · ${nome}`, "", `${angulos.length} ângulos, ${angulos.reduce((s, x) => s + x.ganchos.length, 0)} ganchos. Gerado por ${modelo}.`, "Para reprovar, troque \"aprovado\" para false no .json.", ""];
+  const md = [`# ${produto.nome} · ${nome}`, "", `${angulos.length} ângulos, ${angulos.reduce((s, x) => s + x.ganchos.length, 0)} ganchos. Gerado por ${modelo}.`,
+    ...(mercado ? [`Mercado: ${NOME[mercado.central]}${mercado.submercado ? ` → ${mercado.submercado}` : ""}${mercado.nicho ? ` → ${mercado.nicho}` : ""}.`] : []), "Para reprovar, troque \"aprovado\" para false no .json.", ""];
   for (const an of angulos) {
     md.push(`## ${an.aprovado ? "" : "⚠ "}${an.id} · ${an.base} · consciência: ${an.consciencia}`, "", `**Dor:** ${an.dor}`, "");
     if (an.referencia && an.referencia !== "nenhuma") md.push(`**Baseado em:** ${an.referencia} — ${an.aproveita}`, "");

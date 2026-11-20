@@ -12,10 +12,12 @@
  *  - versões: "N anúncios usam este criativo e texto" indica que o anunciante está escalando;
  *  - ainda ativo: continua funcionando hoje;
  *  - mesmo público: o que vale para o nicho do produto pesa mais do que um nicho vizinho;
+ *  - mesmo submercado: fala dos termos do nicho da ficha (mercado.termos_nicho), dentro do mesmo mercado central;
  *  - coletas: em quantas coletas seguidas (npm run coletar) o anúncio apareceu ativo.
  */
 import fs from "node:fs";
 import path from "node:path";
+import { falaDoNicho, lerMercado } from "./mercado";
 import { args, salvarJSON } from "./util";
 
 export type Referencia = {
@@ -32,6 +34,7 @@ export type Referencia = {
   transcricao: string;
   cta: string;
   observacao?: string;
+  submercado: boolean;
   coletas: number;
   dias: number;
   nota: number;
@@ -54,8 +57,11 @@ const num = (v: string | undefined, padrao: number) => (v && Number.isFinite(Num
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-/** relevancia: termos do assunto (ficha, busca.relevancia). Sem nenhum deles na legenda ou na fala, a referência fica "fora". */
-export function pontuar(linha: Record<string, string>, hoje = new Date(), relevancia: string[] = [], excluir: string[] = []): Referencia {
+/**
+ * relevancia: termos do assunto (ficha, busca.relevancia). Sem nenhum deles na legenda ou na fala, a referência fica "fora".
+ * termosNicho: termos do submercado e do nicho (ficha, mercado.termos_nicho). Quem fala deles ganha até 10 pontos.
+ */
+export function pontuar(linha: Record<string, string>, hoje = new Date(), relevancia: string[] = [], excluir: string[] = [], termosNicho: string[] = []): Referencia {
   const ativo = /^(s|sim|true|1|ativo)$/i.test(linha.ativo ?? "");
   const fim = ativo || !linha.fim ? hoje : data(linha.fim);
   const dias = Math.max(0, Math.round((fim.getTime() - data(linha.inicio).getTime()) / 86400000));
@@ -67,8 +73,10 @@ export function pontuar(linha: Record<string, string>, hoje = new Date(), releva
   const coletas = Math.max(1, num(linha.coletas, 1));
   // Seguir ativo em várias coletas seguidas soma até 10 pontos (nota máxima continua 100).
   const persistencia = Math.min(1, (coletas - 1) / 3) * 10;
-  const nota = Math.min(100, Math.round(tempo + escala + (ativo ? 10 : 0) + { mesmo: 15, vizinho: 8, outro: 0 }[publico] + persistencia));
   const conteudo = semAcento(`${linha.gancho ?? ""} ${linha.transcricao ?? ""} ${linha.observacao ?? ""}`);
+  // Mesmo submercado: o anúncio resolve o mesmo problema do nicho (não só o mesmo mercado central).
+  const submercado = termosNicho.length > 0 && falaDoNicho(conteudo, termosNicho);
+  const nota = Math.min(100, Math.round(tempo + escala + (ativo ? 10 : 0) + { mesmo: 15, vizinho: 8, outro: 0 }[publico] + persistencia + (submercado ? 10 : 0)));
   // excluir: anunciantes reprovados na revisão (ficha, busca.excluir), para não voltarem a cada coleta.
   const excluido = excluir.some((e) => semAcento(linha.anunciante ?? "") === semAcento(e));
   const noAssunto = !excluido && (!relevancia.length || relevancia.some((t) => conteudo.includes(semAcento(t))));
@@ -87,6 +95,7 @@ export function pontuar(linha: Record<string, string>, hoje = new Date(), releva
     transcricao: linha.transcricao ?? "",
     cta: linha.cta ?? "",
     observacao: linha.observacao || undefined,
+    submercado,
     coletas,
     dias,
     nota,
@@ -107,6 +116,7 @@ if (require.main === module) {
   }
   const pasta = path.resolve(a.produto);
   const produto = JSON.parse(fs.readFileSync(path.join(pasta, "produto.json"), "utf8"));
+  const termosNicho = lerMercado(produto)?.termos_nicho ?? [];
   const csv = path.join(pasta, "referencias.csv");
   if (!fs.existsSync(csv)) {
     fs.writeFileSync(csv, COLUNAS.join(";") + "\n");
@@ -119,17 +129,17 @@ if (require.main === module) {
   if (faltam.length) throw new Error(`Faltam colunas em referencias.csv: ${faltam.join(", ")}`);
   const refs = linhas
     .map((l) => Object.fromEntries(l.split(";").map((v, i) => [nomes[i], v.trim()])))
-    .map((l) => pontuar(l, new Date(), produto.busca?.relevancia ?? [], produto.busca?.excluir ?? []))
+    .map((l) => pontuar(l, new Date(), produto.busca?.relevancia ?? [], produto.busca?.excluir ?? [], termosNicho))
     .sort((x, y) => y.nota - x.nota);
   salvarJSON(path.join(pasta, "referencias.json"), { atualizado_em: new Date().toISOString(), referencias: refs });
   const md = [
     "# Referências da Biblioteca de Anúncios",
     "",
-    "Validado: ainda ativo e no ar há 60+ dias, ou 30+ dias com 3+ versões. Promissor: 21+ dias. Fora: não fala do assunto (busca.relevancia). A criação usa só as validadas (ou as promissoras, se não houver validadas).",
+    "Validado: ainda ativo e no ar há 60+ dias, ou 30+ dias com 3+ versões. Promissor: 21+ dias. Fora: não fala do assunto (busca.relevancia). Submercado: fala dos termos do nicho (mercado.termos_nicho) e ganha até 10 pontos. A criação usa só as validadas (ou as promissoras, se não houver validadas).",
     "",
-    "| Nota | Nível | Dias | Versões | Ativo | Público | Anunciante | Gancho |",
-    "|---|---|---|---|---|---|---|---|",
-    ...refs.filter((r) => r.nivel !== "fora").map((r) => `| ${r.nota} | ${r.nivel} | ${r.dias} | ${r.versoes} | ${r.ativo ? "sim" : "não"} | ${r.publico} | [${r.anunciante}](${r.link}) | ${r.gancho} |`),
+    "| Nota | Nível | Dias | Versões | Ativo | Público | Submercado | Anunciante | Gancho |",
+    "|---|---|---|---|---|---|---|---|---|",
+    ...refs.filter((r) => r.nivel !== "fora").map((r) => `| ${r.nota} | ${r.nivel} | ${r.dias} | ${r.versoes} | ${r.ativo ? "sim" : "não"} | ${r.publico} | ${r.submercado ? "sim" : "não"} | [${r.anunciante}](${r.link}) | ${r.gancho} |`),
   ];
   const fora = refs.filter((r) => r.nivel === "fora");
   if (fora.length) md.push("", `Fora do assunto (${fora.length}): ${fora.map((r) => r.anunciante).join(", ")}`);
