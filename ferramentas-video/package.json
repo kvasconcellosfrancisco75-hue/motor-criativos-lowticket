@@ -1,0 +1,1 @@
+{"name":"ferramentas-video","private":true,"version":"0.0.1","description":"Remotion, HyperFrames, ffmpeg, Whisper e yt-dlp para os criativos","dependencies":{"hyperframes":"^0.9.79"}}

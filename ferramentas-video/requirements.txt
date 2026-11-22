@@ -1,0 +1,4 @@
+av==15.1.0
+ctranslate2==4.9.0
+faster-whisper==1.2.1
+yt-dlp==2026.10.26

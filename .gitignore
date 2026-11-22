@@ -6,3 +6,7 @@ saida
 produtos-privados
 # dados minerados da Biblioteca de Anúncios (conteúdo de terceiros)
 inteligencia/
+
+# ambiente local das ferramentas de vídeo (reinstalável: veja ferramentas-video/README.md)
+ferramentas-video/.venv/
+ferramentas-video/testes/
