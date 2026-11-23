@@ -1,4 +1,5 @@
 {
+  "fonte": "navegador",
   "pais": "BR",
   "tipo_busca": "keyword_exact_phrase",
   "termos": [
@@ -17,17 +18,29 @@
     "oferta por tempo limitado",
     "bônus exclusivos",
     "kit completo",
-    "menos de 1 real por dia"
+    "menos de 1 real por dia",
+    "de R$ 97 por",
+    "de R$ 47 por",
+    "R$ 19,90",
+    "R$ 27,00",
+    "R$ 37,00",
+    "R$ 47,00",
+    "pague uma única vez",
+    "acesso por 1 ano",
+    "receba na hora",
+    "baixe agora",
+    "pdf para imprimir",
+    "planner digital",
+    "curso completo",
+    "método simples",
+    "desafio de 21 dias",
+    "comunidade exclusiva"
   ],
-  "limite_por_termo": 50,
-
+  "tentativas": 8,
+  "pausa_ms": 6000,
   "verificar_paginas": 40,
   "aprofundar": 12,
   "paginas_por_oferta": 2,
-  "limite_por_pagina": 60,
-  "custo_max_por_etapa_usd": 8,
-  "custo_por_anuncio_usd": 0.0055,
-
   "criterios": {
     "preco_max": 97,
     "min_ativos": 15,
@@ -36,8 +49,14 @@
     "min_novos": 1,
     "queda_max": 0.2
   },
-
   "max_curtidas_pagina": 2000000,
   "excluir_dominios": [],
-  "excluir_anunciantes": []
+  "excluir_anunciantes": [],
+  "apify": {
+    "_nota": "só com --fonte apify",
+    "limite_por_termo": 50,
+    "limite_por_pagina": 60,
+    "custo_max_por_etapa_usd": 8,
+    "custo_por_anuncio_usd": 0.0055
+  }
 }

@@ -9,23 +9,29 @@
  *   npm run radar -- --sem-aprofundar               # pula a etapa 3 (a mais cara)
  *   npm run radar -- --sem-verificar                # não abre as páginas (sem preço confirmado)
  *   npm run radar -- --termos "a,b" --limite 20     # teste barato
+ *   npm run radar -- --fonte apify                  # coleta pelo Apify em vez do navegador próprio
  *
  * Etapas
  *  1. Descoberta: busca por frases que só aparecem em anúncio de oferta ("acesso imediato", "pagamento único"...).
  *     Descarta e-commerce, catálogo, apps, WhatsApp e perfis. Agrupa os anúncios em OFERTAS pelo destino
  *     (vários anunciantes e criativos levando à mesma página são uma oferta só).
  *  2. Preço: abre a página das ofertas mais fortes (e o checkout, se achar o link) e lê o preço.
- *  3. Aprofundamento: para as ofertas low ticket, coleta todos os anúncios ativos das páginas que as anunciam
- *     e conta quantos levam à oferta. É a medida de volume de verdade; a busca da etapa 1 só mostra uma amostra.
+ *  3. Aprofundamento: para as ofertas low ticket, visita as páginas que as anunciam. Com o navegador próprio, lê o
+ *     total de anúncios ativos da página e estima quantos levam à oferta pela amostra; com o Apify, coleta os
+ *     anúncios e conta. É a medida de volume de verdade; a busca da etapa 1 só mostra uma amostra.
  *  4. Critérios: low ticket, volume, longevidade, investimento contínuo e tendência (a partir da 2ª coleta).
  *
- * A coleta roda no Apify, na sua conta (cobrança por resultado). O custo de cada etapa aparece no terminal.
+ * Fonte dos anúncios: "navegador" (padrão, motor/biblioteca.ts, sem custo) ou "apify" (cobrança por resultado).
+ *
+ * App: com RADAR_API (endereço do app) e RADAR_TOKEN definidos, o radar envia o progresso de cada etapa e o resultado
+ * final ao app (app/), que guarda o histórico usado na tendência e avisa no telefone.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { ApifyClient } from "apify-client";
 import { args, lerJSON, salvarJSON } from "./util";
+import { Biblioteca } from "./biblioteca";
 
 const a = args();
 const cfg = lerJSON(path.resolve(a.config ?? "radar/config.json"));
@@ -35,6 +41,42 @@ const hoje = new Date();
 const diaHoje = hoje.toISOString().slice(0, 10);
 const DIA = 86400000;
 const pais = cfg.pais ?? "BR";
+const fonte: "navegador" | "apify" = (a.fonte ?? cfg.fonte ?? "navegador") as any;
+
+// ───────────────────────────── app (progresso e resultado) ─────────────────────────────
+
+const API = (process.env.RADAR_API ?? "").replace(/\/$/, "");
+const TOKEN = process.env.RADAR_TOKEN ?? "";
+const execucao = `${diaHoje}-${hoje.getTime().toString(36)}`;
+
+/** Chama o app com curl (respeita HTTPS_PROXY; o fetch do Node não). Falha do app nunca para o radar. */
+function chamarApp(metodo: "GET" | "POST", caminho: string, corpo?: unknown): any {
+  if (!API) return undefined;
+  const r = spawnSync(
+    "curl",
+    ["-sS", "--fail-with-body", "--max-time", "60", "-X", metodo, "-H", `Authorization: Bearer ${TOKEN}`, "-H", "Content-Type: application/json",
+      ...(corpo === undefined ? [] : ["--data-binary", "@-"]), `${API}${caminho}`],
+    { input: corpo === undefined ? undefined : JSON.stringify(corpo), encoding: "utf8", maxBuffer: 50 * 1024 * 1024 },
+  );
+  if (r.status !== 0) {
+    console.log(`  (app: ${metodo} ${caminho} falhou: ${(r.stdout || r.stderr || "").trim().slice(0, 160)})`);
+    return undefined;
+  }
+  try {
+    return JSON.parse(r.stdout || "null");
+  } catch {
+    return undefined;
+  }
+}
+
+let ultimoAviso = { etapa: "", em: 0 };
+/** Progresso para o app: na troca de etapa sempre; dentro da etapa, no máximo a cada 20 s (poupa gravações). */
+function aviso(etapa: string, mensagem: string, passo?: number, total?: number) {
+  const agora = Date.now();
+  if (etapa === ultimoAviso.etapa && agora - ultimoAviso.em < 20000 && passo !== total) return;
+  ultimoAviso = { etapa, em: agora };
+  chamarApp("POST", "/api/coleta/evento", { execucao, inicio: hoje.toISOString(), etapa, mensagem, passo, total, fonte });
+}
 
 // ───────────────────────────── anúncios ─────────────────────────────
 
@@ -158,10 +200,34 @@ const urlBusca = (termo: string) => {
     q: exata ? `"${termo}"` : termo,
     search_type: cfg.tipo_busca ?? "keyword_exact_phrase",
   });
-  return `https://www.facebook.com/ads/library/?${q}`;
+  // Mais impressões primeiro: o navegador próprio só recebe os ~30 primeiros, então eles precisam ser os mais fortes.
+  return `https://www.facebook.com/ads/library/?${q}&sort_data[mode]=total_impressions&sort_data[direction]=desc`;
 };
 const urlPagina = (id: string) =>
-  `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=${pais}&media_type=all&search_type=page&view_all_page_id=${id}`;
+  `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=${pais}&media_type=all&search_type=page&view_all_page_id=${id}&sort_data[mode]=total_impressions&sort_data[direction]=desc`;
+
+/** Visita cada endereço com o navegador próprio. Devolve os anúncios (com inputUrl, como o Apify) e os totais. */
+async function coletarNavegador(urls: string[], etapa: string, rotulo: (u: string) => string) {
+  const bib = new Biblioteca({ tentativas: Number(cfg.tentativas ?? 8), pausa_ms: Number(cfg.pausa_ms ?? 6000) });
+  const itens: any[] = [];
+  const totais = new Map<string, number>();
+  let falhas = 0;
+  console.log(`\n[${etapa}] navegador próprio: ${urls.length} endereço(s)...`);
+  try {
+    for (const [i, url] of urls.entries()) {
+      aviso(etapa, `${rotulo(url)} (${i + 1} de ${urls.length})`, i + 1, urls.length);
+      const r = await bib.visitar(url);
+      for (const x of r.anuncios) itens.push({ ...x, inputUrl: url });
+      if (r.total !== undefined) totais.set(url, r.total);
+      if (r.erro) falhas++;
+      console.log(`  ${String(i + 1).padStart(2)}. ${rotulo(url).padEnd(36)} ${r.erro ? `sem resultado após ${r.tentativas} tentativas` : `${r.anuncios.length} anúncios (total ${r.total ?? "?"}, ${r.tentativas}ª tentativa)`}`);
+    }
+  } finally {
+    await bib.fechar();
+  }
+  console.log(`[${etapa}] ${itens.length} anúncios; ${falhas} endereço(s) sem resultado.`);
+  return { itens, totais, falhas };
+}
 
 let custoTotal = 0;
 async function rodarActor(urls: string[], limite: number, etapa: string): Promise<any[]> {
@@ -170,8 +236,8 @@ async function rodarActor(urls: string[], limite: number, etapa: string): Promis
   const actor = cfg.actor ?? "apify/facebook-ads-scraper";
   // Teto de gasto por etapa: sem ele, vale o teto padrão da conta no Apify, que pode cortar a coleta no meio.
   const maxItems = urls.length * limite;
-  const teto = Number(cfg.custo_max_por_etapa_usd ?? 8);
-  const estimativa = maxItems * Number(cfg.custo_por_anuncio_usd ?? 0.0055);
+  const teto = Number(cfg.apify?.custo_max_por_etapa_usd ?? 8);
+  const estimativa = maxItems * Number(cfg.apify?.custo_por_anuncio_usd ?? 0.0055);
   console.log(`\n[${etapa}] ${actor}: ${urls.length} endereço(s), até ${limite} anúncios cada (estimativa: até US$ ${estimativa.toFixed(2)}, teto US$ ${teto.toFixed(2)})...`);
   const run = await client
     .actor(actor)
@@ -408,6 +474,7 @@ type Oferta = {
   falhas: string[];
   aprofundada: boolean;
   limitada: boolean;
+  estimado?: boolean;
   metricas: Metricas;
   descoberta: { ativos: number; nota: number; termos: string[] };
   verificacao?: Verificacao;
@@ -440,7 +507,7 @@ const brl = (v?: number) => (v === undefined ? "?" : `R$ ${v.toFixed(2).replace(
 function blocoOferta(o: Oferta) {
   const m = o.metricas;
   const v = o.verificacao;
-  const ativos = `${m.ativos}${o.limitada ? "+" : ""}${o.aprofundada ? "" : " (só na busca)"}`;
+  const ativos = `${o.estimado ? "≈" : ""}${m.ativos}${o.limitada ? "+" : ""}${o.aprofundada ? "" : " (só na busca)"}`;
   const linhas = [
     `### ${o.chave}${v?.titulo ? ` — ${v.titulo}` : ""}`,
     "",
@@ -491,11 +558,23 @@ async function main() {
   const pastaColetas = path.join(pastaDados, "coletas");
   const pastaHist = path.join(pastaDados, "historico");
 
+  const termoDe = (url: string) => {
+    const q = new URL(url || "https://x").searchParams.get("q") ?? "";
+    return q.replace(/^"|"$/g, "");
+  };
+
   // 1. Descoberta
   const termos: string[] = a.termos ? a.termos.split(",").map((t) => t.trim()).filter(Boolean) : cfg.termos;
-  const brutos: any[] = a["de-arquivo"]
-    ? lerJSON(path.resolve(a["de-arquivo"]))
-    : await rodarActor(termos.map(urlBusca), Number(a.limite ?? cfg.limite_por_termo ?? 50), "1/3 descoberta");
+  aviso("descoberta", `Começando: ${termos.length} buscas na Biblioteca de Anúncios`, 0, termos.length);
+  let falhasBusca = 0;
+  let brutos: any[];
+  if (a["de-arquivo"]) brutos = lerJSON(path.resolve(a["de-arquivo"]));
+  else if (fonte === "apify") brutos = await rodarActor(termos.map(urlBusca), Number(a.limite ?? cfg.apify?.limite_por_termo ?? 50), "1/3 descoberta");
+  else {
+    const r = await coletarNavegador(termos.map(urlBusca), "descoberta", (u) => `busca "${termoDe(u)}"`);
+    brutos = r.itens;
+    falhasBusca = r.falhas;
+  }
   if (!a["de-arquivo"]) salvarJSON(path.join(pastaColetas, `${diaHoje}.busca.json`), brutos);
 
   const descartes = new Map<string, number>();
@@ -508,10 +587,6 @@ async function main() {
     else validos.push(x);
   }
   const grupos = agrupar(validos);
-  const termoDe = (url: string) => {
-    const q = new URL(url || "https://x").searchParams.get("q") ?? "";
-    return q.replace(/^"|"$/g, "");
-  };
   let ofertas: Oferta[] = [...grupos.entries()].map(([chave, ads]) => {
     const m = medir(ads);
     return {
@@ -534,6 +609,7 @@ async function main() {
     const alvo = ofertas.slice(0, nVerificar);
     console.log(`\n[2/3 preço] abrindo a página de ${alvo.length} oferta(s)...`);
     for (const [i, o] of alvo.entries()) {
+      aviso("preco", `Lendo o preço de ${o.chave} (${i + 1} de ${alvo.length})`, i + 1, alvo.length);
       o.verificacao = await verificar(o.metricas.url || `https://${o.metricas.destino}`);
       o.preco = o.verificacao.preco;
       const v = o.verificacao;
@@ -551,13 +627,20 @@ async function main() {
   const nAprofundar = Number(a.aprofundar ?? cfg.aprofundar ?? 12);
   const alvos = ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).slice(0, nAprofundar);
   if (!a["sem-aprofundar"] && alvos.length) {
-    const limitePag = Number(cfg.limite_por_pagina ?? 60);
+    const limitePag = Number(cfg.apify?.limite_por_pagina ?? 60);
     const idsPag = [...new Set(alvos.flatMap((o) => o.metricas.paginas.slice(0, cfg.paginas_por_oferta ?? 2).map((p) => p.id)).filter(Boolean))];
     let brutosPag: any[] = [];
+    // Total de anúncios ativos de cada página (só o navegador próprio lê; o Apify só traz o que coletou).
+    const totalPagina = new Map<string, number>();
     try {
-      brutosPag = a["paginas-de-arquivo"]
-        ? lerJSON(path.resolve(a["paginas-de-arquivo"]))
-        : await rodarActor(idsPag.map(urlPagina), limitePag, "3/3 aprofundamento");
+      if (a["paginas-de-arquivo"]) brutosPag = lerJSON(path.resolve(a["paginas-de-arquivo"]));
+      else if (fonte === "apify") brutosPag = await rodarActor(idsPag.map(urlPagina), limitePag, "3/3 aprofundamento");
+      else {
+        const nome = new Map(alvos.flatMap((o) => o.metricas.paginas.map((p) => [p.id, p.nome] as const)));
+        const r = await coletarNavegador(idsPag.map(urlPagina), "aprofundamento", (u) => `página ${nome.get(new URL(u).searchParams.get("view_all_page_id") ?? "") ?? ""}`.slice(0, 36));
+        brutosPag = r.itens;
+        for (const [u, t] of r.totais) totalPagina.set(new URL(u).searchParams.get("view_all_page_id") ?? "", t);
+      }
     } catch (e: any) {
       // Sem aprofundamento o relatório sai do mesmo jeito, com o volume da busca (um piso, não o total).
       console.log(`[3/3 aprofundamento] falhou: ${String(e?.message ?? e).split("\n")[0]}`);
@@ -579,13 +662,28 @@ async function main() {
       const unicos = [...new Map(todos.map((x) => [x.id, x])).values()];
       o.metricas = medir(unicos);
       o.aprofundada = true;
-      o.limitada = [...ids].some((id) => (porPagina.get(id) ?? 0) >= limitePag);
+      o.limitada = fonte === "apify" && [...ids].some((id) => (porPagina.get(id) ?? 0) >= limitePag);
+      // Navegador próprio: a amostra da página (os ~30 de mais impressões) diz que fração leva à oferta;
+      // o total da página vezes essa fração estima os anúncios ativos da oferta.
+      let estimado = 0;
+      for (const id of ids) {
+        const total = totalPagina.get(id);
+        const amostra = dasPaginas.filter((x) => x.paginaId === id && x.ativo);
+        if (total === undefined || !amostra.length) continue;
+        const daOferta = amostra.filter((x) => x.chave === o.chave).length;
+        estimado += Math.round((total * daOferta) / amostra.length);
+      }
+      if (estimado > o.metricas.ativos) [o.metricas.ativos, o.estimado] = [estimado, true];
     }
   }
 
   // 4. Histórico, mercado e critérios
   const anteriores = fs.existsSync(pastaHist) ? fs.readdirSync(pastaHist).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f < `${diaHoje}.json`).sort() : [];
-  const ant: Record<string, { ativos: number; preco?: number; mercado: string }> = anteriores.length ? lerJSON(path.join(pastaHist, anteriores[anteriores.length - 1])) : {};
+  // Com o app, o histórico vem dele (cada execução no GitHub Actions começa com a pasta vazia).
+  const remoto = API ? chamarApp("GET", "/api/historico") : undefined;
+  const ant: Record<string, { ativos: number; preco?: number; mercado: string }> =
+    remoto?.historico ?? (anteriores.length ? lerJSON(path.join(pastaHist, anteriores[anteriores.length - 1])) : {});
+  const dataAnterior: string | undefined = remoto?.data ?? (anteriores.length ? anteriores[anteriores.length - 1].slice(0, 10) : undefined);
   for (const o of ofertas) {
     o.mercado = mercado([...(grupos.get(o.chave) ?? []).map((x) => x.texto), o.verificacao?.titulo ?? ""]);
     if (ant[o.chave] && o.aprofundada) o.anterior = ant[o.chave].ativos;
@@ -601,8 +699,8 @@ async function main() {
     `${a["de-arquivo"] ? "Coleta reaproveitada" : `${termos.length} buscas`}, ${brutos.length} anúncios, ${validos.length} de oferta, ${ofertas.length} ofertas distintas.`,
     `${ofertas.filter((o) => o.verificacao).length} páginas abertas, ${ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).length} ofertas low ticket, ${ofertas.filter((o) => o.aprofundada).length} aprofundadas.`,
     `Resultado: **${esc} escalada(s)** e ${quase} quase lá.`,
-    anteriores.length ? `Tendência comparada com a coleta de ${anteriores[anteriores.length - 1].slice(0, 10)}.` : "Primeira coleta: a tendência aparece a partir da próxima (rode toda semana).",
-    `Custo no Apify desta execução: US$ ${custoTotal.toFixed(2)}.`,
+    dataAnterior ? `Tendência comparada com a coleta de ${dataAnterior}.` : "Primeira coleta: a tendência aparece a partir da próxima.",
+    fonte === "apify" ? `Custo no Apify desta execução: US$ ${custoTotal.toFixed(2)}.` : `Fonte: navegador próprio (sem custo)${falhasBusca ? `; ${falhasBusca} busca(s) sem resultado` : ""}.`,
   ];
   const pastaSaida = path.join(pastaDados, diaHoje);
   salvarJSON(path.join(pastaSaida, "ofertas.json"), { data: diaHoje, criterios: crit, ofertas });
@@ -618,6 +716,58 @@ async function main() {
     );
   fs.writeFileSync(path.join(pastaSaida, "ofertas.csv"), [cab.join(";"), ...csv].join("\n") + "\n");
   console.log(`\n${resumo.map((r) => r.replace(/\*\*/g, "")).join("\n")}\nRelatório: ${path.join(pastaSaida, "ofertas.md")}`);
+
+  if (API) {
+    // Para o app: as escaladas, as quase lá e as maiores do resto (o painel não precisa das centenas de ofertas fracas).
+    const relevantes = [
+      ...ofertas.filter((o) => o.status !== "fora"),
+      ...ofertas.filter((o) => o.status === "fora" && (o.aprofundada || o.verificacao)).sort((p, q) => q.metricas.ativos - p.metricas.ativos).slice(0, 30),
+    ];
+    const r = chamarApp("POST", "/api/coleta/fim", {
+      execucao,
+      data: diaHoje,
+      inicio: hoje.toISOString(),
+      fim: new Date().toISOString(),
+      fonte,
+      criterios: crit,
+      resumo: resumo.map((x) => x.replace(/\*\*/g, "")),
+      contagem: {
+        buscas: termos.length,
+        anuncios: brutos.length,
+        validos: validos.length,
+        ofertas: ofertas.length,
+        low_ticket: ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).length,
+        aprofundadas: ofertas.filter((o) => o.aprofundada).length,
+        escaladas: esc,
+        quase,
+      },
+      ofertas: relevantes.map((o) => ({
+        chave: o.chave,
+        mercado: o.mercado,
+        status: o.status,
+        falhas: o.falhas,
+        preco: o.preco,
+        fonte_preco: o.verificacao?.fonte,
+        plataforma: o.verificacao?.plataforma,
+        checkout: o.verificacao?.checkout,
+        titulo: o.verificacao?.titulo,
+        url: o.metricas.url,
+        ativos: o.metricas.ativos,
+        aprofundada: o.aprofundada,
+        estimado: !!o.estimado,
+        limitada: o.limitada,
+        criativos: o.metricas.criativos,
+        dias_no_ar: o.metricas.diasNoAr,
+        mais_antigo: dataBR(o.metricas.maisAntigo),
+        novos: o.metricas.novos,
+        anterior: o.anterior,
+        paginas: o.metricas.paginas.slice(0, 5).map((p) => ({ ...p, link: urlPagina(p.id) })),
+        textos: o.metricas.textos,
+      })),
+      historico: hist,
+    });
+    console.log(r ? `Resultado enviado ao app (${API}).` : "O app não recebeu o resultado; o relatório local continua valendo.");
+  }
 }
 
 if (require.main === module)

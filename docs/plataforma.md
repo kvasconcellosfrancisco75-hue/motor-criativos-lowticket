@@ -1,4 +1,4 @@
-# Do motor à plataforma: esboço
+# Do motor à rotina diária: esboço
 
 Hoje o motor é uma linha de comando que leva **uma referência validada a um vídeo pronto**. As plataformas de
 "ofertas escaladas" do mercado vendem outra coisa: um **catálogo de ofertas** e um punhado de **geradores genéricos**
@@ -23,16 +23,15 @@ roteiro sincronizado com a voz e vídeos renderizados em lote. O catálogo vira 
 | Transcrição do gancho falado | **existe** | `motor/transcrever.py` (Whisper) |
 | Ângulos, ganchos e copy a partir de modelos validados | **existe** | `motor/criar.ts` (Claude) |
 | Vídeos em lote, legendas, conferência | **existe** | `motor/roteiros.ts`, `render.ts`, `conferir.ts` |
-| Radar por nicho, sem produto (catálogo de ofertas) | falta | fase 1 |
-| Agrupar anúncios em **ofertas** (pela página de destino) | falta | fase 1 |
+| Radar de ofertas low ticket escaladas | **existe** | `motor/radar.ts` |
+| Agrupar anúncios em **ofertas** (pela página de destino) | **existe** | `motor/radar.ts` |
 | Análise da página e do funil a partir de uma URL | falta | fase 1 |
 | Rascunho de `produto.json` a partir da oferta analisada | falta | fase 1 |
 | Voz gerada (fim da gravação manual) | falta | fase 2 |
 | Página de vendas gerada pela ficha e publicada | falta | fase 2 |
 | Headlines e textos de anúncio em lote | parcial (sai na criação) | fase 2 |
 | Checagem de termos sensíveis antes de subir | falta | fase 2 |
-| Login, planos, pagamento, painel web | falta | fase 3 |
-| Servidor MCP (usar tudo de dentro do Claude/ChatGPT) | falta | fase 3 |
+| Coleta diária automática e app no telefone | **existe** | `motor/radar.ts`, `app/`, [app.md](app.md) |
 
 ## Fase 1 — Radar e análise (continua CLI, sem servidor)
 
@@ -73,27 +72,15 @@ Custo da fase 1: só Apify (por resultado) e tokens do Claude. Dá para rodar se
   (promessa de resultado, saúde, renda, "antes e depois"), avisando quem revisa **para reescrever**,
   junto das `restricoes` que a ficha já tem.
 
-## Fase 3 — Plataforma
+## Fase 3 — Rotina diária (feito)
 
-```
- navegador ─► app web (React) ─► Supabase: login, banco, arquivos, funções
-                                     │
-                                     ├─ função "radar"      → Apify
-                                     ├─ função "analisar"   → Playwright (worker) + Claude
-                                     ├─ função "criar"      → Claude (o mesmo prompt do criar.ts)
-                                     ├─ função "voz"        → texto para fala
-                                     ├─ fila de render ────► worker com Remotion (VPS ou Remotion Lambda)
-                                     ├─ webhook de pagamento (Hotmart/Kiwify/Cakto) → libera o plano
-                                     └─ servidor MCP        → Claude, ChatGPT, Cursor
-```
+A ferramenta é de uso pessoal, não um produto para vender. Em vez de uma plataforma com planos e pagamento:
 
-- O render **não** cabe numa função de borda: precisa de um worker com Chrome e ffmpeg puxando uma fila.
-- O motor atual vira biblioteca: os scripts de `motor/` passam a exportar funções que a CLI e o worker chamam.
-- Tabelas mínimas: `nichos`, `ofertas`, `anuncios`, `coletas` (histórico semanal), `analises`, `produtos`
-  (a ficha em JSON), `criacoes`, `lotes`, `variacoes`, `assinaturas`, `uso` (créditos).
-- **MCP** com poucas ferramentas e bem feitas: `buscar_ofertas`, `analisar_oferta`, `criar_ficha`,
-  `gerar_criacao`, `gerar_lote`, `status_do_lote`. É o que faz a plataforma funcionar dentro do chat do cliente.
-- Cobrança por plano com créditos: minerar e analisar consomem pouco; voz e render consomem mais.
+- o radar roda sozinho todo dia no GitHub Actions, com um coletor próprio da Biblioteca de Anúncios (sem Apify);
+- um app no Cloudflare, instalado na tela inicial do telefone, mostra a coleta acontecendo, as ofertas escaladas e o
+  histórico, e avisa por notificação quando a coleta termina.
+
+Detalhes em [app.md](app.md).
 
 ## O que fica de fora de propósito
 
@@ -107,10 +94,6 @@ Elas derrubam contas de anúncio e trazem risco com o Código de Defesa do Consu
 
 ## Próximos passos sugeridos
 
-1. `radar`: agrupar a coleta por oferta e guardar o histórico semanal (reaproveita `coletar.ts`).
-2. `analisar`: Playwright mais Claude, com briefing em Markdown.
-3. `ficha --de-analise`: rascunho de `produto.json` com os campos `"PREENCHER"`.
-4. `voz`: fechar o ciclo sem gravação manual.
-
-Com os quatro, o fluxo inteiro roda pela linha de comando: **nicho → ofertas → briefing → ficha → vídeos com voz**.
-A plataforma web só começa quando esse fluxo estiver dando resultado nos seus próprios produtos.
+1. `analisar`: página e funil de uma oferta escalada, com briefing em Markdown.
+2. `ficha --de-analise`: rascunho de `produto.json` com os campos `"PREENCHER"`.
+3. `voz`: fechar o ciclo sem gravação manual.
