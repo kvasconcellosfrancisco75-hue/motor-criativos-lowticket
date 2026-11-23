@@ -42,6 +42,7 @@
   "aprofundar": 12,
   "paginas_por_oferta": 2,
   "criterios": {
+    "preco_min": 17,
     "preco_max": 97,
     "min_ativos": 15,
     "min_dias": 21,

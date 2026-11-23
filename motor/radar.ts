@@ -35,11 +35,13 @@ import { Biblioteca } from "./biblioteca";
 
 const a = args();
 const cfg = lerJSON(path.resolve(a.config ?? "radar/config.json"));
-const crit = { preco_max: 97, min_ativos: 15, min_dias: 21, novos_dias: 7, min_novos: 1, queda_max: 0.2, ...(cfg.criterios ?? {}) };
+const crit = { preco_min: 17, preco_max: 97, min_ativos: 15, min_dias: 21, novos_dias: 7, min_novos: 1, queda_max: 0.2, ...(cfg.criterios ?? {}) };
 const pastaDados = path.resolve(a.saida ?? cfg.saida ?? "radar/dados");
 const hoje = new Date();
 const diaHoje = hoje.toISOString().slice(0, 10);
 const DIA = 86400000;
+/** Ticket dentro da faixa low ticket da configuração (padrão: de R$ 17 a R$ 97). */
+const naFaixa = (p?: number) => p !== undefined && p >= crit.preco_min && p <= crit.preco_max;
 const pais = cfg.pais ?? "BR";
 const fonte: "navegador" | "apify" = (a.fonte ?? cfg.fonte ?? "navegador") as any;
 
@@ -453,7 +455,7 @@ type Oferta = {
 function avaliar(o: Oferta) {
   const m = o.metricas;
   const c: [boolean | null, string][] = [
-    [o.preco === undefined ? false : o.preco <= crit.preco_max, o.preco === undefined ? "preço não encontrado" : `preço R$ ${o.preco} acima de R$ ${crit.preco_max}`],
+    [naFaixa(o.preco), o.preco === undefined ? "preço não encontrado" : `preço R$ ${o.preco} fora da faixa de R$ ${crit.preco_min} a R$ ${crit.preco_max}`],
     [m.ativos >= crit.min_ativos, `${m.ativos} anúncios ativos (mínimo ${crit.min_ativos})`],
     [m.diasNoAr >= crit.min_dias, `criativo mais antigo com ${m.diasNoAr} dias (mínimo ${crit.min_dias})`],
     [m.novos >= crit.min_novos, `${m.novos} criativo(s) novo(s) em ${crit.novos_dias} dias (mínimo ${crit.min_novos})`],
@@ -502,7 +504,7 @@ function relatorio(ofertas: Oferta[], resumo: string[]) {
   const md = [
     `# Radar de ofertas low ticket — ${hoje.toLocaleDateString("pt-BR")}`,
     "",
-    `Critérios: preço até ${brl(crit.preco_max)} · ${crit.min_ativos}+ anúncios ativos · criativo no ar há ${crit.min_dias}+ dias · ${crit.min_novos}+ criativo novo em ${crit.novos_dias} dias · sem queda de mais de ${Math.round(crit.queda_max * 100)}% desde a coleta anterior.`,
+    `Critérios: preço de ${brl(crit.preco_min)} a ${brl(crit.preco_max)} · ${crit.min_ativos}+ anúncios ativos · criativo no ar há ${crit.min_dias}+ dias · ${crit.min_novos}+ criativo novo em ${crit.novos_dias} dias · sem queda de mais de ${Math.round(crit.queda_max * 100)}% desde a coleta anterior.`,
     "",
     ...resumo.map((r) => `- ${r}`),
     "",
@@ -588,7 +590,7 @@ async function main() {
 
   // 3. Aprofundamento: todos os anúncios ativos das páginas que anunciam as ofertas low ticket
   const nAprofundar = Number(a.aprofundar ?? cfg.aprofundar ?? 12);
-  const alvos = ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).slice(0, nAprofundar);
+  const alvos = ofertas.filter((o) => naFaixa(o.preco)).slice(0, nAprofundar);
   if (!a["sem-aprofundar"] && alvos.length) {
     const limitePag = Number(cfg.apify?.limite_por_pagina ?? 60);
     const idsPag = [...new Set(alvos.flatMap((o) => o.metricas.paginas.slice(0, cfg.paginas_por_oferta ?? 2).map((p) => p.id)).filter(Boolean))];
@@ -659,7 +661,7 @@ async function main() {
   const quase = ofertas.filter((o) => o.status === "quase").length;
   const resumo = [
     `${a["de-arquivo"] ? "Coleta reaproveitada" : `${termos.length} buscas`}, ${brutos.length} anúncios, ${validos.length} de oferta, ${ofertas.length} ofertas distintas.`,
-    `${ofertas.filter((o) => o.verificacao).length} páginas abertas, ${ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).length} ofertas low ticket, ${ofertas.filter((o) => o.aprofundada).length} aprofundadas.`,
+    `${ofertas.filter((o) => o.verificacao).length} páginas abertas, ${ofertas.filter((o) => naFaixa(o.preco)).length} ofertas low ticket, ${ofertas.filter((o) => o.aprofundada).length} aprofundadas.`,
     `Resultado: **${esc} escalada(s)** e ${quase} quase lá.`,
     dataAnterior ? `Tendência comparada com a coleta de ${dataAnterior}.` : "Primeira coleta: a tendência aparece a partir da próxima.",
     fonte === "apify" ? `Custo no Apify desta execução: US$ ${custoTotal.toFixed(2)}.` : `Fonte: navegador próprio (sem custo)${falhasBusca ? `; ${falhasBusca} busca(s) sem resultado` : ""}.`,
@@ -698,7 +700,7 @@ async function main() {
         anuncios: brutos.length,
         validos: validos.length,
         ofertas: ofertas.length,
-        low_ticket: ofertas.filter((o) => o.preco !== undefined && o.preco <= crit.preco_max).length,
+        low_ticket: ofertas.filter((o) => naFaixa(o.preco)).length,
         aprofundadas: ofertas.filter((o) => o.aprofundada).length,
         escaladas: esc,
         quase,

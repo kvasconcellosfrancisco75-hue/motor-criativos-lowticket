@@ -215,7 +215,7 @@ function listaOfertas() {
   return `
     <div class="segmentos" role="tablist">${seg.map(([k, n]) => `<button data-status="${k}" class="${estado.status === k ? "ativo" : ""}">${n}<small>${por[k].length}</small></button>`).join("")}</div>
     ${daVez.length ? daVez.map(cartaoOferta).join("") : `<div class="vazio">${vazio}</div>`}
-    <p class="nota">Critérios: até ${brl(c.criterios?.preco_max)} · ${c.criterios?.min_ativos}+ anúncios ativos · no ar há ${c.criterios?.min_dias}+ dias · criativo novo em ${c.criterios?.novos_dias} dias · sem queda forte.</p>`;
+    <p class="nota">Critérios: ${c.criterios?.preco_min != null ? `de ${brl(c.criterios.preco_min)} a` : "até"} ${brl(c.criterios?.preco_max)} · ${c.criterios?.min_ativos}+ anúncios ativos · no ar há ${c.criterios?.min_dias}+ dias · criativo novo em ${c.criterios?.novos_dias} dias · sem queda forte.</p>`;
 }
 
 function telaHoje() {
