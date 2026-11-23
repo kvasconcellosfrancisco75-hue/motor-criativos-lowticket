@@ -165,10 +165,14 @@ function cartaoOferta(o) {
         <h4>Anúncios ativos por coleta</h4><div data-serie="${esc(o.chave)}">${graficoSerie(estado.series[o.chave])}</div>
         <h4>Oferta</h4>
         <ul class="lista">
-          <li>Preço: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido ${o.fonte_preco === "checkout" ? "no checkout" : "na página"})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
+          <li>Preço do front: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido ${o.fonte_preco === "checkout" ? "no checkout" : "na página"})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
           <li>Anúncios ativos: <b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b>${o.aprofundada ? (o.estimado ? " (estimado pelo total das páginas)" : "") : " (só o que apareceu na busca)"} · ${o.criativos} criativo(s)</li>
           <li>No ar desde ${esc(o.mais_antigo)} (${o.dias_no_ar} dias) · ${o.novos} criativo(s) novo(s) na semana</li>
         </ul>
+        <h4>Order bumps</h4>
+        ${o.bumps?.length
+          ? `<ul class="lista">${o.bumps.map((b) => `<li>${esc(b.nome || "Sem nome")} · <b>${brl(b.preco)}</b></li>`).join("")}</ul>${o.bumps_apos_nome ? `<p class="nota">Apareceram depois de preencher o nome no checkout.</p>` : ""}`
+          : `<p class="nota">${o.checkout ? `Nenhum no checkout${o.bumps_apos_nome ? ", nem depois de preencher o nome" : ""}.` : "Checkout não encontrado."}</p>`}
         <h4>Anunciantes</h4>
         <ul class="lista">${(o.paginas || []).map((p) => `<li><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.nome || p.id)}</a> · ${p.anuncios} na amostra</li>`).join("")}</ul>
         ${o.textos?.length ? `<h4>Criativos mais duplicados</h4><ul class="lista">${o.textos.map((t) => `<li class="criativo"><a href="${esc(t.link)}" target="_blank" rel="noopener">${t.versoes}× desde ${esc(t.inicio)}</a><small>${esc(t.texto)}</small></li>`).join("")}</ul>` : ""}
@@ -185,7 +189,7 @@ function cartaoOferta(o) {
         <div class="oferta-nome">${esc(nome)}${o.titulo ? `<div class="oferta-dominio">${esc(o.chave)}</div>` : ""}</div>
         <div class="preco">${brl(o.preco)}</div>
       </div>
-      ${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}
+      ${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}${o.bumps?.length ? `<span class="tag">${o.bumps.length} order bump${o.bumps.length > 1 ? "s" : ""}</span>` : ""}
       <div class="metricas">
         <div class="metrica"><b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b><span>ativos</span></div>
         <div class="metrica">${tendencia(o)}</div>

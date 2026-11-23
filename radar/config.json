@@ -39,6 +39,7 @@
   "tentativas": 8,
   "pausa_ms": 6000,
   "verificar_paginas": 40,
+  "preco_da_pagina_sem_checkout": false,
   "aprofundar": 12,
   "paginas_por_oferta": 2,
   "criterios": {

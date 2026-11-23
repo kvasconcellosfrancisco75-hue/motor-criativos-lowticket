@@ -37,7 +37,8 @@ GitHub Actions (06:17, todo dia)                 Cloudflare Worker (app/)       
 
 - **Hoje**: a coleta em andamento (etapa, progresso, o que está acontecendo) ou a última concluída; as ofertas
   **escaladas**, **quase lá** (falta um critério) e as outras.
-  Tocar numa oferta mostra preço, checkout, anunciantes, criativos mais duplicados e o gráfico de anúncios ativos por dia.
+  Tocar numa oferta mostra o preço do front e os order bumps (lidos no checkout), anunciantes, criativos mais
+  duplicados e o gráfico de anúncios ativos por dia.
 - **Histórico**: as escaladas por dia e cada coleta passada.
 - **Avisos**: notificações, instalação e sessão.
 
@@ -53,6 +54,21 @@ da coleta. Se a execução falhar, também chega um aviso, com o link do log.
   oferta pela amostra (o "≈" no app).
 - Se um dia o Facebook mudar a página e a coleta parar de achar anúncios, o app mostra a falha. Dá para rodar
   pelo Apify com `--fonte apify` enquanto o coletor é ajustado.
+
+## Preço e order bumps
+
+O preço registrado é sempre o do **checkout**, nunca o do criativo ou da legenda:
+
+1. Na página de vendas, o radar acha o link do checkout. Sem link direto, clica no botão de compra e segue até ele.
+2. No checkout, troca o país para **Brasil** quando a página vem em outra moeda (Hotmart, Eduzz e Greenn usam o país
+   do IP, e os servidores do GitHub ficam nos EUA) e espera verificações anti-robô.
+3. O front é o valor "à vista", o "total" ou o "1x de" do produto principal; os blocos de order bump ficam de fora.
+4. Os **order bumps** são registrados com nome e preço. Se nenhum aparecer, o radar preenche **"Kaike"** no nome
+   completo e lê de novo, porque alguns só aparecem depois disso. Ele nunca preenche e-mail, telefone, documento ou
+   cartão e nunca envia o formulário.
+
+Sem checkout encontrado, a oferta fica sem preço ("checkout não encontrado"). Para usar o preço da página de vendas
+nesses casos, ligue `preco_da_pagina_sem_checkout` em `radar/config.json`.
 
 ## Ajustes
 
