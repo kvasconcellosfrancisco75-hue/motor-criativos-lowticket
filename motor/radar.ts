@@ -359,6 +359,29 @@ const precoProvavel = (texto: string) => {
   return Math.min(...(d.length ? d : p).map((x) => x.valor));
 };
 
+/** Onde começam os order bumps num checkout: daí para baixo, os preços são de produtos adicionais, não do front. */
+const BUMP =
+  /(also buy|adicionar (produto|ao pedido|oferta|[àa] compra)|adicione (tamb[ée]m|ao pedido|[àa] sua compra)|aproveite (tamb[ée]m|e leve|esta oferta)|leve (tamb[ée]m|junto)|compre (tamb[ée]m|junto)|sim,? ?(eu )?quero (adicionar|levar|aproveitar)|oferta (especial|exclusiva|[úu]nica)|order ?bump|turbine (seu|sua)|[ée] agora ou nunca|s[óo] nesta p[áa]gina|voc[êe] tamb[ée]m pode)/i;
+
+/**
+ * Preço do produto principal (front) num checkout. Primeiro os sinais que só o front tem e que ficam no topo
+ * ("R$ 297,00 à vista", "1x de R$ 297,00", "Total R$ ..."); sem eles, o preço em destaque ANTES do 1º bloco de
+ * order bump. Sem nada confiável, devolve undefined e quem chama usa a página de vendas.
+ */
+export function precoCheckout(texto: string): number | undefined {
+  const num = (x: string) => Number(x.replace(/\./g, "").replace(",", "."));
+  const valido = (v: number) => Number.isFinite(v) && v >= 5 && v <= 20000;
+  const corte = texto.search(BUMP);
+  const valor = "R\\$\\s*(\\d{1,3}(?:\\.\\d{3})*(?:,\\d{1,2})?)";
+  const sinais = [new RegExp(`${valor}\\s*(?:[àa]\\s*vista)`, "i"), new RegExp(`\\b1\\s*x\\s*(?:de\\s*)?${valor}`, "i"), new RegExp(`\\btotal\\b[^R\\d]{0,20}${valor}`, "i")];
+  for (const re of sinais) {
+    const m = re.exec(texto);
+    // O sinal só vale se vier antes dos order bumps (cada bump pode ter o seu "1x de" ou "à vista").
+    if (m && (corte < 0 || m.index < corte) && valido(num(m[1]))) return num(m[1]);
+  }
+  return precoProvavel(corte >= 0 ? texto.slice(0, corte) : texto);
+}
+
 type Verificacao = { titulo?: string; preco?: number; fonte?: string; precos_pagina: number[]; plataforma?: string; checkout?: string; erro?: string };
 
 let navegador: any;
@@ -422,12 +445,12 @@ async function verificar(destino: string): Promise<Verificacao> {
     if (checkout && checkout !== destino) {
       try {
         const ck = await abrir(checkout);
-        const p = precoProvavel(ck.texto);
+        const p = precoCheckout(ck.texto);
         if (p) [v.preco, v.fonte] = [p, "checkout"];
       } catch {}
     }
     if (v.preco === undefined) {
-      const p = precoProvavel(pg.texto);
+      const p = checkout === destino ? precoCheckout(pg.texto) : precoProvavel(pg.texto);
       if (p) [v.preco, v.fonte] = [p, checkout === destino ? "checkout" : "página"];
     }
   } catch (e: any) {
