@@ -4,3 +4,4 @@ saida
 .DS_Store
 # produtos reais ficam fora do repositório público
 produtos-privados
+radar/dados

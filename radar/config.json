@@ -1,0 +1,43 @@
+{
+  "pais": "BR",
+  "tipo_busca": "keyword_exact_phrase",
+  "termos": [
+    "acesso imediato",
+    "pagamento único",
+    "acesso vitalício",
+    "garantia de 7 dias",
+    "receba no seu e-mail",
+    "material digital",
+    "arquivo em pdf",
+    "e-book",
+    "apostila digital",
+    "videoaulas",
+    "passo a passo",
+    "por apenas",
+    "oferta por tempo limitado",
+    "bônus exclusivos",
+    "kit completo",
+    "menos de 1 real por dia"
+  ],
+  "limite_por_termo": 50,
+
+  "verificar_paginas": 40,
+  "aprofundar": 12,
+  "paginas_por_oferta": 2,
+  "limite_por_pagina": 60,
+  "custo_max_por_etapa_usd": 8,
+  "custo_por_anuncio_usd": 0.0055,
+
+  "criterios": {
+    "preco_max": 97,
+    "min_ativos": 15,
+    "min_dias": 21,
+    "novos_dias": 7,
+    "min_novos": 1,
+    "queda_max": 0.2
+  },
+
+  "max_curtidas_pagina": 2000000,
+  "excluir_dominios": [],
+  "excluir_anunciantes": []
+}
