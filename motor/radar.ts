@@ -324,37 +324,6 @@ const agrupar = (ads: Anuncio[]) => {
 const notaDescoberta = (m: Metricas) =>
   m.ativos * 2 + m.paginas.length * 3 + m.novos * 2 + (m.diasNoAr >= crit.min_dias ? 6 : 0) + Math.min(m.diasNoAr, 120) / 20;
 
-// ───────────────────────────── mercado (Brunson) ─────────────────────────────
-
-/** Saúde, riqueza ou relacionamento: um rótulo depois da coleta, não um filtro na busca. */
-const SINAIS: Record<string, string[]> = {
-  "saúde": [
-    "emagrec", "peso", "quilos", "kg", "barriga", "dieta", "receitas fit", "low carb", "jejum", "diabet", "glicose", "pressao alta",
-    "ansiedade", "depress", "insonia", "dormir", "sono", "dor", "coluna", "joelho", "articula", "gastrite", "intestin", "inchaco",
-    "saude", "menopausa", "cabelo", "calvicie", "pele", "manchas", "celulite", "flacidez", "treino", "academia", "yoga", "pilates",
-    "gluten", "detox", "cha ", "natural", "tireoide", "fibromialgia", "memoria", "postura", "visao", "cha seca", "metabolismo",
-  ],
-  riqueza: [
-    "renda", "dinheiro", "ganhar", "vender", "vendas", "venda", "negocio", "empreend", "lucr", "faturar", "clientes", "marketing",
-    "trafego", "afiliad", "concurso", "carreira", "emprego", "profiss", "professor", "salario", "investi", "financ", "divida",
-    "excel", "curriculo", "freela", "encomenda", "loja", "revend", "ingles", "certificado", "aprovad", "enem",
-  ],
-  relacionamento: [
-    "relacionamento", "namor", "casamento", "casal", "marido", "esposa", "reconquist", "ex ", "conquistar", "seducao", "amor",
-    "filho", "bebe", "maternidade", "mae", "pai ", "crianca", "familia", "autoestima", "comunicacao", "amizade", "solteir",
-    "paquera", "traicao", "ciume", "birra", "educacao infantil", "adolescente", "autismo", "tdah",
-  ],
-};
-function mercado(textos: string[]): string {
-  const t = ` ${sem(textos.join(" "))} `;
-  // Cada sinal é o começo de uma palavra ("dor" conta "dores", não "vendedor"); com espaço no fim, a palavra inteira.
-  const conta = (p: string) => (t.match(new RegExp(`\\b${p.trim()}${p.endsWith(" ") ? "\\b" : ""}`, "g")) ?? []).length;
-  const pontos = Object.entries(SINAIS).map(([m, l]) => [m, l.reduce((s, p) => s + conta(p), 0)] as const);
-  pontos.sort((p, q) => q[1] - p[1]);
-  if (!pontos[0][1] || pontos[0][1] === pontos[1][1]) return "indefinido";
-  return pontos[0][0];
-}
-
 // ───────────────────────────── preço ─────────────────────────────
 
 const CHECKOUTS: [string, string][] = [
@@ -469,7 +438,6 @@ async function verificar(destino: string): Promise<Verificacao> {
 
 type Oferta = {
   chave: string;
-  mercado: string;
   status: "escalada" | "quase" | "fora";
   falhas: string[];
   aprofundada: boolean;
@@ -541,14 +509,10 @@ function relatorio(ofertas: Oferta[], resumo: string[]) {
     `## Escaladas (${esc.length})`,
     "",
   ];
-  for (const merc of ["saúde", "riqueza", "relacionamento", "indefinido"]) {
-    const l = esc.filter((o) => o.mercado === merc);
-    if (!l.length) continue;
-    md.push(`## ${merc[0].toUpperCase()}${merc.slice(1)} (${l.length})`, "", ...l.map((o) => blocoOferta(o) + "\n"));
-  }
+  md.push(...esc.map((o) => blocoOferta(o) + "\n"));
   if (!esc.length) md.push("Nenhuma oferta cumpriu todos os critérios nesta coleta.", "");
   md.push(`## Quase lá: falta um critério (${quase.length})`, "");
-  for (const o of quase) md.push(`*${o.mercado}*`, "", blocoOferta(o), "");
+  for (const o of quase) md.push(blocoOferta(o), "");
   return md.join("\n");
 }
 
@@ -591,7 +555,6 @@ async function main() {
     const m = medir(ads);
     return {
       chave,
-      mercado: "indefinido",
       status: "fora",
       falhas: [],
       aprofundada: false,
@@ -677,20 +640,19 @@ async function main() {
     }
   }
 
-  // 4. Histórico, mercado e critérios
+  // 4. Histórico e critérios
   const anteriores = fs.existsSync(pastaHist) ? fs.readdirSync(pastaHist).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f < `${diaHoje}.json`).sort() : [];
   // Com o app, o histórico vem dele (cada execução no GitHub Actions começa com a pasta vazia).
   const remoto = API ? chamarApp("GET", "/api/historico") : undefined;
-  const ant: Record<string, { ativos: number; preco?: number; mercado: string }> =
+  const ant: Record<string, { ativos: number; preco?: number }> =
     remoto?.historico ?? (anteriores.length ? lerJSON(path.join(pastaHist, anteriores[anteriores.length - 1])) : {});
   const dataAnterior: string | undefined = remoto?.data ?? (anteriores.length ? anteriores[anteriores.length - 1].slice(0, 10) : undefined);
   for (const o of ofertas) {
-    o.mercado = mercado([...(grupos.get(o.chave) ?? []).map((x) => x.texto), o.verificacao?.titulo ?? ""]);
     if (ant[o.chave] && o.aprofundada) o.anterior = ant[o.chave].ativos;
     avaliar(o);
   }
-  const hist: Record<string, { ativos: number; preco?: number; mercado: string }> = { ...ant };
-  for (const o of ofertas) if (o.aprofundada) hist[o.chave] = { ativos: o.metricas.ativos, preco: o.preco, mercado: o.mercado };
+  const hist: Record<string, { ativos: number; preco?: number }> = { ...ant };
+  for (const o of ofertas) if (o.aprofundada) hist[o.chave] = { ativos: o.metricas.ativos, preco: o.preco };
   salvarJSON(path.join(pastaHist, `${diaHoje}.json`), hist);
 
   const esc = ofertas.filter((o) => o.status === "escalada").length;
@@ -705,11 +667,11 @@ async function main() {
   const pastaSaida = path.join(pastaDados, diaHoje);
   salvarJSON(path.join(pastaSaida, "ofertas.json"), { data: diaHoje, criterios: crit, ofertas });
   fs.writeFileSync(path.join(pastaSaida, "ofertas.md"), relatorio(ofertas, resumo));
-  const cab = ["status", "mercado", "oferta", "titulo", "preco", "plataforma", "ativos", "aprofundada", "criativos", "dias_no_ar", "novos", "anterior", "paginas", "falta"];
+  const cab = ["status", "oferta", "titulo", "preco", "plataforma", "ativos", "aprofundada", "criativos", "dias_no_ar", "novos", "anterior", "paginas", "falta"];
   const csv = ofertas
     .filter((o) => o.status !== "fora")
     .map((o) =>
-      [o.status, o.mercado, o.chave, o.verificacao?.titulo ?? "", o.preco ?? "", o.verificacao?.plataforma ?? "", o.metricas.ativos, o.aprofundada ? "sim" : "não",
+      [o.status, o.chave, o.verificacao?.titulo ?? "", o.preco ?? "", o.verificacao?.plataforma ?? "", o.metricas.ativos, o.aprofundada ? "sim" : "não",
         o.metricas.criativos, o.metricas.diasNoAr, o.metricas.novos, o.anterior ?? "", o.metricas.paginas.map((p) => p.nome).join(" / "), o.falhas.join(" / ")]
         .map((c) => String(c).replace(/[;\n]/g, " "))
         .join(";"),
@@ -743,7 +705,6 @@ async function main() {
       },
       ofertas: relevantes.map((o) => ({
         chave: o.chave,
-        mercado: o.mercado,
         status: o.status,
         falhas: o.falhas,
         preco: o.preco,

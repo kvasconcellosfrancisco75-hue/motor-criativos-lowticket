@@ -36,7 +36,7 @@ GitHub Actions (06:17, todo dia)                 Cloudflare Worker (app/)       
 ## O que o app mostra
 
 - **Hoje**: a coleta em andamento (etapa, progresso, o que está acontecendo) ou a última concluída; as ofertas
-  **escaladas**, **quase lá** (falta um critério) e as outras, com filtro por mercado (saúde, riqueza, relacionamento).
+  **escaladas**, **quase lá** (falta um critério) e as outras.
   Tocar numa oferta mostra preço, checkout, anunciantes, criativos mais duplicados e o gráfico de anúncios ativos por dia.
 - **Histórico**: as escaladas por dia e cada coleta passada.
 - **Avisos**: notificações, instalação e sessão.

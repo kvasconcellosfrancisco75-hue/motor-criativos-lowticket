@@ -8,13 +8,6 @@ const ETAPAS = [
   ["preco", "Lendo preços"],
   ["aprofundamento", "Medindo volume"],
 ];
-const MERCADOS = [
-  ["todos", "Todos"],
-  ["saúde", "Saúde"],
-  ["riqueza", "Riqueza"],
-  ["relacionamento", "Relacionamento"],
-  ["indefinido", "Sem mercado"],
-];
 
 const estado = {
   tela: "hoje",
@@ -23,7 +16,6 @@ const estado = {
   agora: undefined,
   indice: undefined,
   status: "escalada",
-  mercado: "todos",
   abertas: new Set(),
   series: {},
 };
@@ -193,7 +185,7 @@ function cartaoOferta(o) {
         <div class="oferta-nome">${esc(nome)}${o.titulo ? `<div class="oferta-dominio">${esc(o.chave)}</div>` : ""}</div>
         <div class="preco">${brl(o.preco)}</div>
       </div>
-      <span class="tag ${esc(o.mercado)}">${esc(MERCADOS.find(([k]) => k === o.mercado)?.[1] || o.mercado)}</span>${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}
+      ${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}
       <div class="metricas">
         <div class="metrica"><b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b><span>ativos</span></div>
         <div class="metrica">${tendencia(o)}</div>
@@ -214,7 +206,7 @@ function listaOfertas() {
     ["quase", "Quase lá"],
     ["fora", "Outras"],
   ];
-  const daVez = por[estado.status].filter((o) => estado.mercado === "todos" || o.mercado === estado.mercado).sort((a, b) => b.ativos - a.ativos);
+  const daVez = por[estado.status].slice().sort((a, b) => b.ativos - a.ativos);
   const vazio = {
     escalada: "Nenhuma oferta cumpriu todos os critérios nesta coleta.",
     quase: "Nenhuma oferta ficou a um critério de distância.",
@@ -222,7 +214,6 @@ function listaOfertas() {
   }[estado.status];
   return `
     <div class="segmentos" role="tablist">${seg.map(([k, n]) => `<button data-status="${k}" class="${estado.status === k ? "ativo" : ""}">${n}<small>${por[k].length}</small></button>`).join("")}</div>
-    <div class="chips">${MERCADOS.map(([k, n]) => `<button class="chip ${estado.mercado === k ? "ativo" : ""}" data-mercado="${k}">${n}</button>`).join("")}</div>
     ${daVez.length ? daVez.map(cartaoOferta).join("") : `<div class="vazio">${vazio}</div>`}
     <p class="nota">Critérios: até ${brl(c.criterios?.preco_max)} · ${c.criterios?.min_ativos}+ anúncios ativos · no ar há ${c.criterios?.min_dias}+ dias · criativo novo em ${c.criterios?.novos_dias} dias · sem queda forte.</p>`;
 }
@@ -379,8 +370,6 @@ $app.addEventListener("click", async (ev) => {
   }
   const st = t.closest("[data-status]");
   if (st) return ((estado.status = st.dataset.status), telaHoje());
-  const me = t.closest("[data-mercado]");
-  if (me) return ((estado.mercado = me.dataset.mercado), telaHoje());
   const dia = t.closest("[data-dia]");
   if (dia) {
     estado.data = dia.dataset.dia;
