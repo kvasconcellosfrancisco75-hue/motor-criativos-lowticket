@@ -1,0 +1,8 @@
+{
+  "name": "radar-ofertas-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "publicar": "node embutir.mjs && npx wrangler@4.166.0 deploy"
+  }
+}

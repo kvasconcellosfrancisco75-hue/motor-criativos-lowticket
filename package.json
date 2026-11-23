@@ -11,7 +11,8 @@
     "studio": "remotion studio src/index.ts",
     "tipos": "tsc --noEmit",
     "referencias": "tsx motor/referencias.ts",
-    "coletar": "tsx motor/coletar.ts"
+    "coletar": "tsx motor/coletar.ts",
+    "radar": "tsx motor/radar.ts"
   },
   "license": "MIT",
   "dependencies": {

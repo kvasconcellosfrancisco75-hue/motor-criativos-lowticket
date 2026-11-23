@@ -1,0 +1,47 @@
+# Coleta diária do radar de ofertas. Os resultados vão para o app (app/), não para o repositório.
+# Segredos do repositório (Settings → Secrets and variables → Actions): RADAR_API e RADAR_TOKEN. Veja docs/app.md.
+name: Radar diário
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # 06:17 em Brasília (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch:
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependências
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Coleta
+        env:
+          RADAR_API: ${{ secrets.RADAR_API }}
+          RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
+        run: npm run radar -- --saida "$RUNNER_TEMP/radar"
+
+      - name: Avisar o app se falhou
+        if: failure()
+        env:
+          RADAR_API: ${{ secrets.RADAR_API }}
+          RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
+          LOG: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -X POST "$RADAR_API/api/coleta/erro" \
+            -H "Authorization: Bearer $RADAR_TOKEN" -H "Content-Type: application/json" \
+            --data "{\"mensagem\":\"A execução no GitHub Actions falhou. Log: $LOG\"}"
