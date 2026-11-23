@@ -173,7 +173,7 @@ function cartaoOferta(o) {
         <h4>Anúncios ativos por coleta</h4><div data-serie="${esc(o.chave)}">${graficoSerie(estado.series[o.chave])}</div>
         <h4>Oferta</h4>
         <ul class="lista">
-          <li>Preço: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido no ${esc(o.fonte_preco)})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
+          <li>Preço: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido ${o.fonte_preco === "checkout" ? "no checkout" : "na página"})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
           <li>Anúncios ativos: <b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b>${o.aprofundada ? (o.estimado ? " (estimado pelo total das páginas)" : "") : " (só o que apareceu na busca)"} · ${o.criativos} criativo(s)</li>
           <li>No ar desde ${esc(o.mais_antigo)} (${o.dias_no_ar} dias) · ${o.novos} criativo(s) novo(s) na semana</li>
         </ul>
