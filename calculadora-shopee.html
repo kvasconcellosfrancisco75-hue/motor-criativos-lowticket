@@ -126,6 +126,21 @@ body {
 .btn { background: var(--accent); color: #fff; border: 0; border-radius: 12px; font: 700 15px var(--font); padding: 0 16px; cursor: pointer; }
 .btn.ghost { background: var(--accent); color: #fff; width: 100%; padding: 13px; margin-top: 16px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; z-index: 30; }
+/* Fundo branco (alternativo) */
+body[data-skin="white"] { --bg: #ffffff; --grad: none; --fg: #222222; --muted: #757575; --glass: #f2f2f2; --glass-2: #e5e5e5; --glass-line: rgba(0,0,0,.04); }
+body[data-skin="white"] .chip.on { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(238,77,45,.3); }
+body[data-skin="white"] .chip.on .lb { color: rgba(255,255,255,.88); }
+body[data-skin="white"] .expr b { color: var(--accent); background: rgba(238,77,45,.1); }
+body[data-skin="white"] .big { text-shadow: none; }
+body[data-skin="white"] .stats span b { color: var(--fg); }
+body[data-skin="white"] .stats .ko b { background: #fde8e4; color: var(--bad); }
+body[data-skin="white"] .caption em { color: var(--accent); }
+body[data-skin="white"] .seg button { color: var(--fg); }
+body[data-skin="white"] .seg button.on { background: var(--accent); color: #fff; }
+body[data-skin="white"] .key.op { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(238,77,45,.28); }
+body[data-skin="white"] .key:active, body[data-skin="white"] .key.flash { filter: brightness(.93); }
+body[data-skin="white"] .round-ic:focus-visible, body[data-skin="white"] .key:focus-visible, body[data-skin="white"] .chip:focus-visible, body[data-skin="white"] .seg button:focus-visible { outline-color: var(--accent); }
+.skin-ic span { width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; background: linear-gradient(90deg, #fff 50%, #ee4d2d 50%); box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) { .key { transition: none; } }
 </style>
 
@@ -134,6 +149,7 @@ body {
     <button class="round-ic" id="btnProd" aria-label="Produtos salvos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l-3 2"/></svg>
     </button>
+    <button class="round-ic skin-ic" id="btnSkin" aria-label="Alternar fundo laranja ou branco"><span></span></button>
     <button class="round-ic" id="btnTax" aria-label="Taxas da Shopee">
       <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="5.5" width="8" height="3" rx=".8"/><circle cx="9" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="15" r="1.1"/><circle cx="12" cy="15" r="1.1"/><circle cx="15" cy="15" r="1.1"/><circle cx="9" cy="18" r="1.1"/><circle cx="12" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/></svg>
     </button>
@@ -407,6 +423,11 @@ body {
     if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
     t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 1600);
   }
+
+  let skin = store.get('vf_skin', 'orange');
+  const applySkin = () => { document.body.dataset.skin = skin; };
+  $('btnSkin').addEventListener('click', () => { skin = skin === 'white' ? 'orange' : 'white'; store.set('vf_skin', skin); applySkin(); });
+  applySkin();
 
   load(EXAMPLES[0]);
   render();
