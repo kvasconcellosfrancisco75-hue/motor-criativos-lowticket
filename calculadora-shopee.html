@@ -77,7 +77,7 @@ body {
 .seg button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 
 .pad {
-  --k: min(calc((min(100vw, 430px) - 32px - 3 * 12px) / 4), calc((100dvh - 495px) / 5));
+  --k: min(calc((min(100vw, 430px) - 32px - 3 * 12px) / 4), calc((100dvh - 470px) / 5));
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0;
 }
 .key {
@@ -134,7 +134,6 @@ body {
     <button class="round-ic" id="btnProd" aria-label="Produtos salvos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l-3 2"/></svg>
     </button>
-    <div class="brand"><strong>Calculadora Vivifesteira</strong><small>Precificação para vender na Shopee</small></div>
     <button class="round-ic" id="btnTax" aria-label="Taxas da Shopee">
       <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="5.5" width="8" height="3" rx=".8"/><circle cx="9" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="15" r="1.1"/><circle cx="12" cy="15" r="1.1"/><circle cx="15" cy="15" r="1.1"/><circle cx="9" cy="18" r="1.1"/><circle cx="12" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/></svg>
     </button>
@@ -166,7 +165,6 @@ body {
     <button class="key" data-k=",">,</button>
     <button class="key op" data-k="=">=</button>
   </div>
-  <div class="note">Ferramenta independente, sem vínculo oficial com a Shopee</div>
 </div>
 
 <div class="veil" id="veilTax" hidden>
