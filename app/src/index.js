@@ -96,7 +96,7 @@ async function fim(env, corpo, ctx) {
     inicio: corpo.inicio,
     fim: corpo.fim,
     contagem: corpo.contagem,
-    escaladas: corpo.ofertas.filter((o) => o.status === "escalada").map((o) => ({ chave: o.chave, titulo: o.titulo, mercado: o.mercado, preco: o.preco })),
+    escaladas: corpo.ofertas.filter((o) => o.status === "escalada").map((o) => ({ chave: o.chave, titulo: o.titulo, preco: o.preco })),
   });
   await gravar(env, "indice", indice.sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, MAX_INDICE));
 

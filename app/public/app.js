@@ -8,13 +8,6 @@ const ETAPAS = [
   ["preco", "Lendo preços"],
   ["aprofundamento", "Medindo volume"],
 ];
-const MERCADOS = [
-  ["todos", "Todos"],
-  ["saúde", "Saúde"],
-  ["riqueza", "Riqueza"],
-  ["relacionamento", "Relacionamento"],
-  ["indefinido", "Sem mercado"],
-];
 
 const estado = {
   tela: "hoje",
@@ -23,7 +16,6 @@ const estado = {
   agora: undefined,
   indice: undefined,
   status: "escalada",
-  mercado: "todos",
   abertas: new Set(),
   series: {},
 };
@@ -173,10 +165,14 @@ function cartaoOferta(o) {
         <h4>Anúncios ativos por coleta</h4><div data-serie="${esc(o.chave)}">${graficoSerie(estado.series[o.chave])}</div>
         <h4>Oferta</h4>
         <ul class="lista">
-          <li>Preço: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido ${o.fonte_preco === "checkout" ? "no checkout" : "na página"})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
+          <li>Preço do front: <b>${brl(o.preco)}</b>${o.fonte_preco ? ` (lido ${o.fonte_preco === "checkout" ? "no checkout" : "na página"})` : ""}${o.plataforma ? ` · ${esc(o.plataforma)}` : ""}</li>
           <li>Anúncios ativos: <b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b>${o.aprofundada ? (o.estimado ? " (estimado pelo total das páginas)" : "") : " (só o que apareceu na busca)"} · ${o.criativos} criativo(s)</li>
           <li>No ar desde ${esc(o.mais_antigo)} (${o.dias_no_ar} dias) · ${o.novos} criativo(s) novo(s) na semana</li>
         </ul>
+        <h4>Order bumps</h4>
+        ${o.bumps?.length
+          ? `<ul class="lista">${o.bumps.map((b) => `<li>${esc(b.nome || "Sem nome")} · <b>${brl(b.preco)}</b></li>`).join("")}</ul>${o.bumps_apos_nome ? `<p class="nota">Apareceram depois de preencher o nome no checkout.</p>` : ""}`
+          : `<p class="nota">${o.checkout ? `Nenhum no checkout${o.bumps_apos_nome ? ", nem depois de preencher o nome" : ""}.` : "Checkout não encontrado."}</p>`}
         <h4>Anunciantes</h4>
         <ul class="lista">${(o.paginas || []).map((p) => `<li><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.nome || p.id)}</a> · ${p.anuncios} na amostra</li>`).join("")}</ul>
         ${o.textos?.length ? `<h4>Criativos mais duplicados</h4><ul class="lista">${o.textos.map((t) => `<li class="criativo"><a href="${esc(t.link)}" target="_blank" rel="noopener">${t.versoes}× desde ${esc(t.inicio)}</a><small>${esc(t.texto)}</small></li>`).join("")}</ul>` : ""}
@@ -193,7 +189,7 @@ function cartaoOferta(o) {
         <div class="oferta-nome">${esc(nome)}${o.titulo ? `<div class="oferta-dominio">${esc(o.chave)}</div>` : ""}</div>
         <div class="preco">${brl(o.preco)}</div>
       </div>
-      <span class="tag ${esc(o.mercado)}">${esc(MERCADOS.find(([k]) => k === o.mercado)?.[1] || o.mercado)}</span>${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}
+      ${o.plataforma ? `<span class="tag">${esc(o.plataforma)}</span>` : ""}${o.bumps?.length ? `<span class="tag">${o.bumps.length} order bump${o.bumps.length > 1 ? "s" : ""}</span>` : ""}
       <div class="metricas">
         <div class="metrica"><b>${o.estimado ? "≈" : ""}${o.ativos}${o.limitada ? "+" : ""}</b><span>ativos</span></div>
         <div class="metrica">${tendencia(o)}</div>
@@ -214,7 +210,7 @@ function listaOfertas() {
     ["quase", "Quase lá"],
     ["fora", "Outras"],
   ];
-  const daVez = por[estado.status].filter((o) => estado.mercado === "todos" || o.mercado === estado.mercado).sort((a, b) => b.ativos - a.ativos);
+  const daVez = por[estado.status].slice().sort((a, b) => b.ativos - a.ativos);
   const vazio = {
     escalada: "Nenhuma oferta cumpriu todos os critérios nesta coleta.",
     quase: "Nenhuma oferta ficou a um critério de distância.",
@@ -222,9 +218,8 @@ function listaOfertas() {
   }[estado.status];
   return `
     <div class="segmentos" role="tablist">${seg.map(([k, n]) => `<button data-status="${k}" class="${estado.status === k ? "ativo" : ""}">${n}<small>${por[k].length}</small></button>`).join("")}</div>
-    <div class="chips">${MERCADOS.map(([k, n]) => `<button class="chip ${estado.mercado === k ? "ativo" : ""}" data-mercado="${k}">${n}</button>`).join("")}</div>
     ${daVez.length ? daVez.map(cartaoOferta).join("") : `<div class="vazio">${vazio}</div>`}
-    <p class="nota">Critérios: até ${brl(c.criterios?.preco_max)} · ${c.criterios?.min_ativos}+ anúncios ativos · no ar há ${c.criterios?.min_dias}+ dias · criativo novo em ${c.criterios?.novos_dias} dias · sem queda forte.</p>`;
+    <p class="nota">Critérios: ${c.criterios?.preco_min != null ? `de ${brl(c.criterios.preco_min)} a` : "até"} ${brl(c.criterios?.preco_max)} · ${c.criterios?.min_ativos}+ anúncios ativos · no ar há ${c.criterios?.min_dias}+ dias · criativo novo em ${c.criterios?.novos_dias} dias · sem queda forte.</p>`;
 }
 
 function telaHoje() {
@@ -379,8 +374,6 @@ $app.addEventListener("click", async (ev) => {
   }
   const st = t.closest("[data-status]");
   if (st) return ((estado.status = st.dataset.status), telaHoje());
-  const me = t.closest("[data-mercado]");
-  if (me) return ((estado.mercado = me.dataset.mercado), telaHoje());
   const dia = t.closest("[data-dia]");
   if (dia) {
     estado.data = dia.dataset.dia;
