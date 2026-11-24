@@ -65,11 +65,11 @@ body {
 .stats .ko b { color: var(--bad); }
 
 .pad {
-  --k: min(calc((min(100vw, 430px) - 32px - 3 * var(--gap)) / 4 * .84), calc((100dvh - 470px) / 5));
-  display: grid; grid-template-columns: repeat(4, var(--k)); gap: 12px calc(var(--k) * .22); justify-content: center; flex-shrink: 0;
+  --k: min(calc((min(100vw, 430px) - 32px - 3 * 12px) / 4), calc((100dvh - 470px) / 5));
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0;
 }
 .key {
-  width: var(--k); height: var(--k); border-radius: 50%; border: 0; cursor: pointer;
+  width: 100%; height: var(--k); border-radius: 999px; border: 0; cursor: pointer;
   background: var(--key-num); color: var(--fg); font-family: inherit;
   font-size: calc(var(--k) * .42); font-weight: 400; display: grid; place-items: center;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(0,0,0,.3);
