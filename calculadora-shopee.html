@@ -40,14 +40,14 @@ body {
 .round-ic svg { width: 26px; height: 26px; }
 .round-ic:focus-visible, .key:focus-visible, .chip:focus-visible, .sheet button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+.chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 12px; }
 .chip {
-  border: 0; border-radius: 14px; background: #141414; color: var(--fg); padding: 8px 6px;
+  border: 0; border-radius: 14px; background: #141414; color: var(--fg); padding: 8px 5px;
   text-align: left; cursor: pointer; min-width: 0; font-family: inherit;
   box-shadow: inset 0 0 0 1px #242424;
 }
-.chip .lb { display: block; font-size: 10.5px; color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip .vl { display: block; font-size: 15px; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip .lb { display: block; font-size: 10px; color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip .vl { display: block; font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .chip.on .lb { color: var(--accent); }
 
@@ -57,7 +57,12 @@ body {
 .big-wrap { display: flex; align-items: baseline; gap: 8px; max-width: 100%; }
 .big-wrap .cur { color: var(--muted); font-size: 28px; font-weight: 300; }
 .big { font-size: 88px; font-weight: 300; line-height: 1.02; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.caption { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.caption { color: var(--muted); font-size: 13px; margin-top: 2px; text-align: right; line-height: 1.45; }
+.seg { display: flex; align-items: center; gap: 2px; background: #1c1c1e; border-radius: 10px; padding: 2px 2px 2px 10px; margin-bottom: 8px; box-shadow: inset 0 0 0 1px #2a2a2a; }
+.seg span { color: var(--muted); font-size: 12px; margin-right: 6px; }
+.seg button { border: 0; background: none; color: var(--muted); font: 600 13px var(--font); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.seg button.on { background: var(--accent); color: #000; }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .caption em { color: var(--accent); font-style: normal; }
 .stats { display: flex; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; justify-content: flex-end; font-variant-numeric: tabular-nums; }
 .stats span b { color: var(--fg); font-weight: 500; }
@@ -128,6 +133,7 @@ body {
   <div class="chips" id="chips"></div>
 
   <div class="display">
+    <div class="seg" id="seg" hidden><span>Promoção em</span><button data-m="pct" id="segPct">%</button><button data-m="fix" id="segFix">R$</button></div>
     <div class="expr" id="expr"></div>
     <div class="big-wrap"><span class="cur">R$</span><span class="big" id="big">0</span></div>
     <div class="caption" id="caption">cadastre na Shopee por este preço</div>
@@ -181,7 +187,8 @@ body {
     { id: 'ins', label: 'Insumos' },
     { id: 'emb', label: 'Embalagem' },
     { id: 'mao', label: 'Mão de obra' },
-    { id: 'luc', label: 'Lucro' }
+    { id: 'luc', label: 'Lucro' },
+    { id: 'pro', label: 'Promoção' }
   ];
   const EXAMPLES = [
     { name: 'Caneca de Porcelana Personalizada', ins: 11, emb: 2.5, mao: 4.5, luc: 6, ex: true },
@@ -199,6 +206,7 @@ body {
   const F = {};
   let active = 'ins';
   let lastExpr = null; // texto cinza mostrado depois do "="
+  let promoMode = 'pct'; // 'pct' = porcentagem, 'fix' = valor fixo em R$
 
   const $ = (id) => document.getElementById(id);
   const money = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -206,7 +214,7 @@ body {
   const numStr = (v) => { const r = Math.round(v * 1e8) / 1e8; return String(r).replace('.', ','); };
 
   function setField(id, v) { F[id] = v ? [{ t: 'n', s: numStr(Math.abs(v)), neg: v < 0 }] : []; }
-  function load(p) { FIELDS.forEach(f => setField(f.id, p[f.id])); active = 'ins'; lastExpr = null; }
+  function load(p) { FIELDS.forEach(f => setField(f.id, p[f.id] || 0)); promoMode = p.pm || 'pct'; active = 'ins'; lastExpr = null; }
 
   function evalTokens(tk) {
     const arr = tk.slice();
@@ -227,40 +235,56 @@ body {
   const showTokens = (tk) => tk.map(x => x.t === 'o' ? x.v : (x.neg ? '−' : '') + x.s).join('');
   const val = (id) => { const v = evalTokens(F[id]); return isFinite(v) ? v : 0; };
 
-  function compute() {
-    const ins = val('ins'), emb = val('emb'), mao = val('mao'), luc = val('luc');
+  // v = {ins, emb, mao, luc, pro}; mode = 'pct' | 'fix'
+  function calc(v, mode) {
     const com = tax.com / 100, des = tax.des / 100, fix = tax.fix;
-    const custo = ins + emb + mao;
-    if (com >= 1 || des >= 1) return { ok: false, custo };
-    const final = (custo + luc + fix) / (1 - com);
-    const cheio = final / (1 - des);
-    const vitrine = cheio * (1 - des);
-    const real = vitrine - vitrine * com - fix - custo;
-    return { ok: true, custo, luc, final, cheio, vitrine, real, margem: vitrine ? real / vitrine : 0 };
+    const custo = (v.ins || 0) + (v.emb || 0) + (v.mao || 0), luc = v.luc || 0, pro = Math.max(0, v.pro || 0);
+    const pp = mode === 'pct' ? pro / 100 : 0;
+    if (com >= 1 || des >= 1 || pp >= 1) return { ok: false, custo };
+    // valor que o cliente paga de fato (depois da promoção): cobre custo, lucro, taxa fixa e comissão
+    const paid = (custo + luc + fix) / (1 - com);
+    // preço da vitrine (já com o desconto de cadastro), antes da promoção
+    const vitrine = mode === 'pct' ? paid / (1 - pp) : paid + pro;
+    const cheio = vitrine / (1 - des);
+    const real = paid - paid * com - fix - custo;
+    return { ok: true, custo, luc, paid, vitrine, cheio, real, promo: pro > 0, margem: paid ? real / paid : 0 };
+  }
+  function compute() {
+    const v = {}; FIELDS.forEach(f => v[f.id] = val(f.id));
+    return calc(v, promoMode);
+  }
+  function fmtField(id) {
+    const v = val(id);
+    return id === 'pro' && promoMode === 'pct' ? numStr(Math.round(v * 100) / 100) + '%' : money(v);
   }
 
   function render() {
     $('chips').innerHTML = FIELDS.map(f =>
-      `<button class="chip${f.id === active ? ' on' : ''}" data-f="${f.id}"><span class="lb">${f.label}</span><span class="vl">${money(val(f.id))}</span></button>`
+      `<button class="chip${f.id === active ? ' on' : ''}" data-f="${f.id}"><span class="lb">${f.label}</span><span class="vl">${fmtField(f.id)}</span></button>`
     ).join('');
 
     const fl = FIELDS.find(f => f.id === active).label;
     const tk = F[active];
     const txt = lastExpr !== null ? lastExpr + '=' : (tk.length > 1 ? showTokens(tk) : '');
-    $('expr').innerHTML = `<b>${fl}</b>${txt || money(val(active))}`;
+    $('expr').innerHTML = `<b>${fl}</b>${txt || fmtField(active)}`;
+    $('seg').hidden = active !== 'pro';
+    $('segPct').classList.toggle('on', promoMode === 'pct');
+    $('segFix').classList.toggle('on', promoMode === 'fix');
 
     const r = compute();
     const big = $('big');
     if (!r.ok) {
       big.textContent = '—';
-      $('caption').textContent = 'comissão e desconto precisam ser menores que 100%';
+      $('caption').textContent = 'comissão, desconto e promoção precisam ser menores que 100%';
       $('stats').innerHTML = '';
     } else {
       const s = money(r.cheio);
       big.textContent = s;
       const len = s.length;
       big.style.fontSize = Math.max(40, Math.min(88, 88 * 7 / Math.max(len, 7))) + 'px';
-      $('caption').innerHTML = `preço de cadastro · com <em>${numStr(tax.des)}% OFF</em> o cliente paga R$ ${money(r.vitrine)}`;
+      $('caption').innerHTML = r.promo
+        ? `preço de cadastro · vitrine com <em>${numStr(tax.des)}% OFF</em> R$ ${money(r.vitrine)}<br>na promoção o cliente paga <em>R$ ${money(r.paid)}</em>`
+        : `preço de cadastro · com <em>${numStr(tax.des)}% OFF</em> o cliente paga R$ ${money(r.vitrine)}`;
       const ok = r.real >= 0;
       $('stats').innerHTML =
         `<span>custo <b>${money(r.custo)}</b></span>` +
@@ -314,6 +338,7 @@ body {
 
   // eventos
   $('pad').addEventListener('click', e => { const b = e.target.closest('.key'); if (b) press(b.dataset.k); });
+  $('seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { promoMode = b.dataset.m; render(); } });
   $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) { active = b.dataset.f; lastExpr = null; render(); } });
   document.addEventListener('keydown', e => {
     if (!$('veilTax').hidden || !$('veilProd').hidden) { if (e.key === 'Escape') closeAll(); return; }
@@ -321,7 +346,7 @@ body {
     let k = /^[0-9]$/.test(e.key) ? e.key : map[e.key];
     if (!k) return;
     e.preventDefault();
-    if (k === 'tab') { const i = FIELDS.findIndex(f => f.id === active); active = FIELDS[(i + (e.shiftKey ? 3 : 1)) % 4].id; lastExpr = null; render(); return; }
+    if (k === 'tab') { const i = FIELDS.findIndex(f => f.id === active); active = FIELDS[(i + (e.shiftKey ? FIELDS.length - 1 : 1)) % FIELDS.length].id; lastExpr = null; render(); return; }
     const btn = document.querySelector(`.key[data-k="${k}"]`);
     if (btn) { btn.classList.add('flash'); setTimeout(() => btn.classList.remove('flash'), 110); }
     press(k);
@@ -341,9 +366,9 @@ body {
 
   // produtos
   function metaFor(p) {
-    const c = p.ins + p.emb + p.mao, com = tax.com / 100, des = tax.des / 100;
-    const cheio = (c + p.luc + tax.fix) / (1 - com) / (1 - des);
-    return `custo ${money(c)} · lucro ${money(p.luc)} · cadastrar <i>R$ ${money(cheio)}</i>`;
+    const r = calc(p, p.pm || 'pct');
+    const promo = p.pro > 0 ? ` · promo ${(p.pm || 'pct') === 'pct' ? numStr(p.pro) + '%' : 'R$ ' + money(p.pro)}` : '';
+    return `custo ${money(r.custo)} · lucro ${money(p.luc)}${promo} · cadastrar <i>${r.ok ? 'R$ ' + money(r.cheio) : '—'}</i>`;
   }
   function renderProds() {
     const all = saved.map((p, i) => ({ ...p, idx: i })).concat(EXAMPLES);
@@ -363,7 +388,7 @@ body {
   $('saveBtn').addEventListener('click', () => {
     const name = $('saveName').value.trim();
     if (!name) { $('saveName').focus(); toast('Digite um nome para salvar'); return; }
-    const p = { name }; FIELDS.forEach(f => p[f.id] = Math.round(val(f.id) * 100) / 100);
+    const p = { name, pm: promoMode }; FIELDS.forEach(f => p[f.id] = Math.round(val(f.id) * 100) / 100);
     saved.unshift(p); store.set('vf_prods', saved); $('saveName').value = ''; renderProds(); toast('Produto salvo');
   });
 
