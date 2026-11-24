@@ -298,7 +298,13 @@ body[data-skin="white"] .round-ic:focus-visible, body[data-skin="white"] .key:fo
 
     const r = compute();
     const big = $('big');
-    if (!r.ok) {
+    const vazio = FIELDS.every(f => val(f.id) === 0);
+    if (vazio) {
+      big.textContent = '0';
+      big.style.fontSize = '88px';
+      $('stats').innerHTML = '';
+      $('caption').innerHTML = '<span>Preencha os custos e o lucro</span><span>para ver o preço de cadastro</span>';
+    } else if (!r.ok) {
       big.textContent = '—';
       $('caption').textContent = 'Comissão, desconto e promoção precisam ser menores que 100%';
       $('stats').innerHTML = '';
