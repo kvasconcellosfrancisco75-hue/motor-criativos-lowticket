@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Calculadora de Precificação</title>
+<meta name="description" content="Calcule o preço de cadastro com comissão, taxa fixa, desconto de vitrine e promoções.">
+<meta name="theme-color" content="#ee4d2d" id="themeColor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Precificação">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+html { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; font-size: 14px; }
+[hidden] { display: none !important; }
+</style>
+<style>
+/* Layout: uma tela só, estilo calculadora de celular — campos no topo, visor com o preço de cadastro, teclado embaixo.
+   Visual: degradê laranja de marketplace, tudo em branco por cima; folhas brancas com detalhes laranja. */
+:root {
+  color-scheme: light;
+  --bg: #ee4d2d;
+  --grad: linear-gradient(160deg, #ee4d2d 0%, #f5622d 38%, #ff7a2e 68%, #ffa53a 100%);
+  --fg: #ffffff;
+  --muted: rgba(255,255,255,.82);
+  --glass: rgba(255,255,255,.16);
+  --glass-2: rgba(255,255,255,.28);
+  --glass-line: rgba(255,255,255,.30);
+  --accent: #ee4d2d;
+  --accent-deep: #d73211;
+  --ink: #222222;
+  --ink-muted: #757575;
+  --sheet: #ffffff;
+  --field: #f5f5f5;
+  --line: #ececec;
+  --bad: #b80f00;
+  --font: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); background-image: var(--grad); background-attachment: fixed;
+  color: var(--fg); font-family: var(--font);
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  overflow: hidden;
+}
+.app {
+  height: 100%; max-width: 430px; margin: 0 auto; display: flex; flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 14px; box-sizing: border-box;
+}
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.brand { text-align: center; line-height: 1.15; min-width: 0; }
+.brand strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: .01em; }
+.brand small { display: block; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.round-ic {
+  width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--glass);
+  color: var(--fg); display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.round-ic svg { width: 24px; height: 24px; }
+.round-ic:focus-visible, .key:focus-visible, .chip:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 12px; }
+.chip {
+  border: 0; border-radius: 12px; background: var(--glass); color: var(--fg); padding: 8px 5px;
+  text-align: left; cursor: pointer; min-width: 0; font-family: inherit;
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.chip .lb { display: block; font-size: 10px; color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip .vl { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip.on { background: #fff; color: var(--accent); box-shadow: 0 4px 14px rgba(160,40,0,.25); }
+.chip.on .lb { color: var(--accent); }
+
+.display { flex: 1 0 auto; min-height: 175px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; padding: 0 6px 18px; }
+.expr { color: var(--muted); font-size: 26px; font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.expr b { font-weight: 700; color: #fff; font-size: 14px; margin-right: 8px; letter-spacing: .04em; text-transform: uppercase; background: var(--glass-2); padding: 3px 8px; border-radius: 6px; vertical-align: 4px; }
+.big-wrap { display: flex; align-items: baseline; gap: 8px; max-width: 100%; }
+.big-wrap .cur { color: var(--muted); font-size: 28px; font-weight: 400; }
+.big { font-size: 88px; font-weight: 300; line-height: 1.02; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 2px 18px rgba(150,30,0,.18); }
+.stats { display: flex; gap: 12px; margin-top: 6px; font-size: min(16.5px, 3.7vw); color: var(--muted); flex-wrap: nowrap; white-space: nowrap; max-width: 100%; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.stats span b { color: #fff; font-weight: 700; }
+.stats .ko b { background: #fff; color: var(--bad); padding: 0 6px; border-radius: 6px; }
+.caption span { display: block; white-space: nowrap; }
+.caption { color: var(--muted); font-size: min(15.5px, 3.7vw); margin-top: 10px; text-align: right; line-height: 1.45; }
+.caption em { color: #fff; font-style: normal; font-weight: 700; }
+.seg { display: flex; align-items: center; gap: 2px; background: var(--glass); border-radius: 10px; padding: 2px 2px 2px 10px; margin-bottom: 8px; box-shadow: inset 0 0 0 1px var(--glass-line); }
+.seg span { color: var(--muted); font-size: 12px; margin-right: 6px; }
+.seg button { border: 0; background: none; color: #fff; font: 700 13px var(--font); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.seg button.on { background: #fff; color: var(--accent); }
+.seg button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+.pad {
+  --k: min(calc((min(100vw, 430px) - 32px - 3 * 12px) / 4), calc((100dvh - 470px) / 5));
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0;
+}
+.key {
+  width: 100%; height: var(--k); border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--glass); color: var(--fg); font-family: inherit;
+  font-size: calc(var(--k) * .42); font-weight: 400; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+  transition: filter .12s, transform .12s;
+}
+.key:active, .key.flash { filter: brightness(1.15); transform: scale(.97); }
+.key.fn { background: var(--glass-2); }
+.key.op { background: #fff; color: var(--accent); font-size: calc(var(--k) * .5); font-weight: 500; box-shadow: 0 4px 14px rgba(160,40,0,.22); }
+.key.op:active, .key.op.flash { filter: brightness(.94); }
+.key svg { width: 46%; height: 46%; }
+.note { text-align: center; font-size: 10.5px; color: var(--muted); margin-top: 10px; }
+
+/* Folhas (produtos e taxas): brancas, com detalhes laranja */
+.veil { position: fixed; inset: 0; background: rgba(60,15,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 430px; max-height: 82%; overflow-y: auto; background: var(--sheet); color: var(--ink);
+  border-radius: 22px 22px 0 0; box-sizing: border-box; user-select: text; -webkit-user-select: text;
+  padding: 10px max(18px, env(safe-area-inset-left, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-right, 0px));
+}
+.sheet button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grab { width: 38px; height: 5px; border-radius: 3px; background: #dcdcdc; margin: 0 auto 14px; }
+.sheet h2 { font-size: 20px; font-weight: 700; margin: 0 0 4px; color: var(--accent); }
+.sheet p.sub { color: var(--ink-muted); font-size: 13px; margin: 0 0 16px; line-height: 1.4; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.row label { font-size: 16px; }
+.row small { display: block; color: var(--ink-muted); font-size: 12px; margin-top: 2px; }
+.row input {
+  width: 96px; background: var(--field); border: 0; border-radius: 10px; color: var(--ink); text-align: right;
+  font: 600 17px var(--font); padding: 9px 10px; font-variant-numeric: tabular-nums;
+}
+.row input:focus { outline: 2px solid var(--accent); }
+.prod { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.prod button.load { flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: var(--ink); font: inherit; cursor: pointer; padding: 0; }
+.prod .nm { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod .meta { display: block; font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.prod .meta i { color: var(--accent); font-style: normal; font-weight: 600; }
+.prod .del { background: var(--field); border: 0; color: var(--ink-muted); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+.tag { font-size: 10.5px; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 1px; }
+.save { display: flex; gap: 8px; margin: 6px 0 14px; }
+.save input { flex: 1; min-width: 0; background: var(--field); border: 0; border-radius: 12px; color: var(--ink); font: 16px var(--font); padding: 11px 12px; }
+.save input:focus { outline: 2px solid var(--accent); }
+.btn { background: var(--accent); color: #fff; border: 0; border-radius: 12px; font: 700 15px var(--font); padding: 0 16px; cursor: pointer; }
+.btn.ghost { background: var(--accent); color: #fff; width: 100%; padding: 13px; margin-top: 16px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; z-index: 30; }
+/* Fundo branco (alternativo) */
+body[data-skin="white"] { --bg: #ffffff; --grad: none; --fg: #222222; --muted: #757575; --glass: #f2f2f2; --glass-2: #e5e5e5; --glass-line: rgba(0,0,0,.04); }
+body[data-skin="white"] .chip.on { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(238,77,45,.3); }
+body[data-skin="white"] .chip.on .lb { color: rgba(255,255,255,.88); }
+body[data-skin="white"] .expr b { color: var(--accent); background: rgba(238,77,45,.1); }
+body[data-skin="white"] .big { text-shadow: none; }
+body[data-skin="white"] .stats span b { color: var(--fg); }
+body[data-skin="white"] .stats .ko b { background: #fde8e4; color: var(--bad); }
+body[data-skin="white"] .caption em { color: var(--accent); }
+body[data-skin="white"] .seg button { color: var(--fg); }
+body[data-skin="white"] .seg button.on { background: var(--accent); color: #fff; }
+body[data-skin="white"] .key.op { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(238,77,45,.28); }
+body[data-skin="white"] .key:active, body[data-skin="white"] .key.flash { filter: brightness(.93); }
+body[data-skin="white"] .round-ic:focus-visible, body[data-skin="white"] .key:focus-visible, body[data-skin="white"] .chip:focus-visible, body[data-skin="white"] .seg button:focus-visible { outline-color: var(--accent); }
+.skin-ic span { width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; background: linear-gradient(90deg, #fff 50%, #ee4d2d 50%); box-sizing: border-box; }
+@media (prefers-reduced-motion: reduce) { .key { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <button class="round-ic" id="btnProd" aria-label="Produtos salvos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l-3 2"/></svg>
+    </button>
+    <button class="round-ic skin-ic" id="btnSkin" aria-label="Alternar fundo laranja ou branco"><span></span></button>
+    <button class="round-ic" id="btnTax" aria-label="Taxas da Shopee">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="5.5" width="8" height="3" rx=".8"/><circle cx="9" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/><circle cx="9" cy="15" r="1.1"/><circle cx="12" cy="15" r="1.1"/><circle cx="15" cy="15" r="1.1"/><circle cx="9" cy="18" r="1.1"/><circle cx="12" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/></svg>
+    </button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="display">
+    <div class="seg" id="seg" hidden><span>Promoção em</span><button data-m="pct" id="segPct">%</button><button data-m="fix" id="segFix">R$</button></div>
+    <div class="expr" id="expr"></div>
+    <div class="big-wrap"><span class="cur">R$</span><span class="big" id="big">0</span></div>
+    <div class="stats" id="stats"></div>
+    <div class="caption" id="caption">Cadastre na Shopee por este preço</div>
+  </div>
+
+  <div class="pad" id="pad">
+    <button class="key fn" data-k="back" aria-label="Apagar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M8.5 5H20a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5L3 12z"/><path d="M11.5 9.5l5 5M16.5 9.5l-5 5"/></svg></button>
+    <button class="key fn" data-k="ac" id="acKey">AC</button>
+    <button class="key fn" data-k="%">%</button>
+    <button class="key op" data-k="÷">÷</button>
+    <button class="key" data-k="7">7</button><button class="key" data-k="8">8</button><button class="key" data-k="9">9</button>
+    <button class="key op" data-k="×">×</button>
+    <button class="key" data-k="4">4</button><button class="key" data-k="5">5</button><button class="key" data-k="6">6</button>
+    <button class="key op" data-k="−">−</button>
+    <button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button>
+    <button class="key op" data-k="+">+</button>
+    <button class="key" data-k="neg" aria-label="Inverter sinal">⁺∕₋</button>
+    <button class="key" data-k="0">0</button>
+    <button class="key" data-k=",">,</button>
+    <button class="key op" data-k="=">=</button>
+  </div>
+</div>
+
+<div class="veil" id="veilTax" hidden>
+  <div class="sheet" role="dialog" aria-label="Taxas da Shopee">
+    <div class="grab"></div>
+    <h2>Taxas da Shopee</h2>
+    <p class="sub">Confira os valores atuais no Seller Centre. Ao mudar aqui, todos os preços são recalculados.</p>
+    <div class="row"><div><label for="tCom">Comissão</label><small>% sobre o preço de venda</small></div><input id="tCom" inputmode="decimal"></div>
+    <div class="row"><div><label for="tFix">Taxa fixa por item</label><small>R$ por unidade vendida</small></div><input id="tFix" inputmode="decimal"></div>
+    <div class="row"><div><label for="tDes">Desconto de vitrine</label><small>% da promoção na Central de Marketing</small></div><input id="tDes" inputmode="decimal"></div>
+    <button class="btn ghost" data-close>Pronto</button>
+  </div>
+</div>
+
+<div class="veil" id="veilProd" hidden>
+  <div class="sheet" role="dialog" aria-label="Produtos">
+    <div class="grab"></div>
+    <h2>Produtos</h2>
+    <p class="sub">Toque num produto para carregar os custos dele na calculadora.</p>
+    <div class="save"><input id="saveName" placeholder="Nome do produto atual" maxlength="80"><button class="btn" id="saveBtn">Salvar</button></div>
+    <div id="prodList"></div>
+    <button class="btn ghost" data-close>Fechar</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const FIELDS = [
+    { id: 'ins', label: 'Insumos' },
+    { id: 'emb', label: 'Embalagem' },
+    { id: 'mao', label: 'Mão de obra' },
+    { id: 'luc', label: 'Lucro' },
+    { id: 'pro', label: 'Promoção' }
+  ];
+  const EXAMPLES = [
+    { name: 'Caneca de Porcelana Personalizada', ins: 11, emb: 2.5, mao: 4.5, luc: 6, ex: true },
+    { name: 'Planner 2025 Capa Dura A5', ins: 16.5, emb: 3, mao: 8.5, luc: 12, ex: true },
+    { name: 'Kit 20 Caixinhas Milk', ins: 14, emb: 2.5, mao: 7.5, luc: 10, ex: true }
+  ];
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  let tax = store.get('vf_tax', { com: 20, fix: 4, des: 40 });
+  let saved = store.get('vf_prods', []);
+  // tokens por campo: [{t:'n', s:'23,50', neg:false}, {t:'o', v:'×'}]
+  const F = {};
+  let active = 'ins';
+  let lastExpr = null; // texto cinza mostrado depois do "="
+  let promoMode = 'pct'; // 'pct' = porcentagem, 'fix' = valor fixo em R$
+
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const parseBR = (s) => { const v = parseFloat(String(s).replace(/\./g, '').replace(',', '.')); return isNaN(v) ? 0 : v; };
+  const numStr = (v) => { const r = Math.round(v * 1e8) / 1e8; return String(r).replace('.', ','); };
+
+  function setField(id, v) { F[id] = v ? [{ t: 'n', s: numStr(Math.abs(v)), neg: v < 0 }] : []; }
+  function load(p) { FIELDS.forEach(f => setField(f.id, p[f.id] || 0)); promoMode = p.pm || 'pct'; active = 'ins'; lastExpr = null; }
+
+  function evalTokens(tk) {
+    const arr = tk.slice();
+    while (arr.length && arr[arr.length - 1].t === 'o') arr.pop();
+    if (!arr.length) return 0;
+    const nums = [], ops = [];
+    arr.forEach(x => x.t === 'n' ? nums.push((x.neg ? -1 : 1) * parseBR(x.s)) : ops.push(x.v));
+    // × e ÷ primeiro
+    const n2 = [nums[0]], o2 = [];
+    ops.forEach((op, i) => {
+      const b = nums[i + 1];
+      if (op === '×') n2[n2.length - 1] *= b;
+      else if (op === '÷') n2[n2.length - 1] = b === 0 ? NaN : n2[n2.length - 1] / b;
+      else { o2.push(op); n2.push(b); }
+    });
+    return o2.reduce((acc, op, i) => op === '+' ? acc + n2[i + 1] : acc - n2[i + 1], n2[0]);
+  }
+  const showTokens = (tk) => tk.map(x => x.t === 'o' ? x.v : (x.neg ? '−' : '') + x.s).join('');
+  const val = (id) => { const v = evalTokens(F[id]); return isFinite(v) ? v : 0; };
+
+  // v = {ins, emb, mao, luc, pro}; mode = 'pct' | 'fix'
+  function calc(v, mode) {
+    const com = tax.com / 100, des = tax.des / 100, fix = tax.fix;
+    const custo = (v.ins || 0) + (v.emb || 0) + (v.mao || 0), luc = v.luc || 0, pro = Math.max(0, v.pro || 0);
+    const pp = mode === 'pct' ? pro / 100 : 0;
+    if (com >= 1 || des >= 1 || pp >= 1) return { ok: false, custo };
+    // valor que o cliente paga de fato (depois da promoção): cobre custo, lucro, taxa fixa e comissão
+    const paid = (custo + luc + fix) / (1 - com);
+    // preço da vitrine (já com o desconto de cadastro), antes da promoção
+    const vitrine = mode === 'pct' ? paid / (1 - pp) : paid + pro;
+    const cheio = vitrine / (1 - des);
+    const real = paid - paid * com - fix - custo;
+    return { ok: true, custo, luc, paid, vitrine, cheio, real, promo: pro > 0, margem: paid ? real / paid : 0 };
+  }
+  function compute() {
+    const v = {}; FIELDS.forEach(f => v[f.id] = val(f.id));
+    return calc(v, promoMode);
+  }
+  function fmtField(id) {
+    const v = val(id);
+    return id === 'pro' && promoMode === 'pct' ? numStr(Math.round(v * 100) / 100) + '%' : money(v);
+  }
+
+  function render() {
+    $('chips').innerHTML = FIELDS.map(f =>
+      `<button class="chip${f.id === active ? ' on' : ''}" data-f="${f.id}"><span class="lb">${f.label}</span><span class="vl">${fmtField(f.id)}</span></button>`
+    ).join('');
+
+    const fl = FIELDS.find(f => f.id === active).label;
+    const tk = F[active];
+    const txt = lastExpr !== null ? lastExpr + '=' : (tk.length > 1 ? showTokens(tk) : '');
+    $('expr').innerHTML = `<b>${fl}</b>${txt || fmtField(active)}`;
+    $('seg').hidden = active !== 'pro';
+    $('segPct').classList.toggle('on', promoMode === 'pct');
+    $('segFix').classList.toggle('on', promoMode === 'fix');
+
+    const r = compute();
+    const big = $('big');
+    const vazio = FIELDS.every(f => val(f.id) === 0);
+    if (vazio) {
+      big.textContent = '0';
+      big.style.fontSize = '88px';
+      $('stats').innerHTML = '';
+      $('caption').innerHTML = '<span>Preencha os custos e o lucro</span><span>para ver o preço de cadastro</span>';
+    } else if (!r.ok) {
+      big.textContent = '—';
+      $('caption').textContent = 'Comissão, desconto e promoção precisam ser menores que 100%';
+      $('stats').innerHTML = '';
+    } else {
+      const s = money(r.cheio);
+      big.textContent = s;
+      const len = s.length;
+      big.style.fontSize = Math.max(40, Math.min(88, 88 * 7 / Math.max(len, 7))) + 'px';
+      $('caption').innerHTML = r.promo
+        ? `<span>Vitrine com <em>${numStr(tax.des)}% OFF</em>: R$ ${money(r.vitrine)}</span><span>Na promoção, o cliente paga <em>R$ ${money(r.paid)}</em></span>`
+        : `<span>Preço de cadastro com <em>${numStr(tax.des)}% OFF</em> na vitrine</span><span>O cliente paga <em>R$ ${money(r.vitrine)}</em></span>`;
+      const ok = r.real >= 0;
+      $('stats').innerHTML =
+        `<span>Custo <b>${money(r.custo)}</b></span>` +
+        `<span class="${ok ? 'ok' : 'ko'}">Lucro real <b>${money(r.real)}</b></span>` +
+        `<span>Margem <b>${(r.margem * 100).toFixed(1).replace('.', ',')}%</b></span>`;
+    }
+    $('acKey').textContent = F[active].length ? 'C' : 'AC';
+  }
+
+  function press(k) {
+    const tk = F[active];
+    const last = tk[tk.length - 1];
+    if (lastExpr !== null && /[0-9,]/.test(k)) { F[active] = []; return (lastExpr = null, press(k)); }
+    lastExpr = null;
+    if (/^[0-9]$/.test(k)) {
+      if (last && last.t === 'n') { if (last.s.replace(/\D/g, '').length < 9) last.s = last.s === '0' ? k : last.s + k; }
+      else tk.push({ t: 'n', s: k, neg: false });
+    } else if (k === ',') {
+      if (last && last.t === 'n') { if (!last.s.includes(',')) last.s += ','; }
+      else tk.push({ t: 'n', s: '0,', neg: false });
+    } else if ('+−×÷'.includes(k)) {
+      if (!tk.length) tk.push({ t: 'n', s: '0', neg: false });
+      if (tk[tk.length - 1].t === 'o') tk[tk.length - 1].v = k; else tk.push({ t: 'o', v: k });
+    } else if (k === 'back') {
+      if (last) {
+        if (last.t === 'o') tk.pop();
+        else { last.s = last.s.slice(0, -1); if (!last.s) tk.pop(); }
+      }
+    } else if (k === 'ac') {
+      if (tk.length) F[active] = [];
+      else FIELDS.forEach(f => F[f.id] = []);
+    } else if (k === 'neg') {
+      if (last && last.t === 'n') last.neg = !last.neg;
+    } else if (k === '%') {
+      if (last && last.t === 'n') {
+        let v = parseBR(last.s) / 100;
+        const op = tk[tk.length - 2];
+        if (op && (op.v === '+' || op.v === '−')) v = Math.abs(evalTokens(tk.slice(0, -2))) * v;
+        last.s = numStr(v);
+      }
+    } else if (k === '=') {
+      const expr = tk.length > 1 ? showTokens(tk) : null;
+      const v = evalTokens(tk);
+      setField(active, isFinite(v) ? Math.round(v * 100) / 100 : 0);
+      const i = FIELDS.findIndex(f => f.id === active);
+      if (expr) { lastExpr = expr; }
+      else { active = FIELDS[(i + 1) % FIELDS.length].id; }
+    }
+    render();
+  }
+
+  // eventos
+  $('pad').addEventListener('click', e => { const b = e.target.closest('.key'); if (b) press(b.dataset.k); });
+  $('seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { promoMode = b.dataset.m; render(); } });
+  $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) { active = b.dataset.f; lastExpr = null; render(); } });
+  document.addEventListener('keydown', e => {
+    if (!$('veilTax').hidden || !$('veilProd').hidden) { if (e.key === 'Escape') closeAll(); return; }
+    const map = { '*': '×', 'x': '×', '/': '÷', '-': '−', '+': '+', '.': ',', ',': ',', 'Enter': '=', '=': '=', 'Backspace': 'back', 'Escape': 'ac', '%': '%', 'Tab': 'tab' };
+    let k = /^[0-9]$/.test(e.key) ? e.key : map[e.key];
+    if (!k) return;
+    e.preventDefault();
+    if (k === 'tab') { const i = FIELDS.findIndex(f => f.id === active); active = FIELDS[(i + (e.shiftKey ? FIELDS.length - 1 : 1)) % FIELDS.length].id; lastExpr = null; render(); return; }
+    const btn = document.querySelector(`.key[data-k="${k}"]`);
+    if (btn) { btn.classList.add('flash'); setTimeout(() => btn.classList.remove('flash'), 110); }
+    press(k);
+  });
+
+  function closeAll() { $('veilTax').hidden = true; $('veilProd').hidden = true; }
+  document.querySelectorAll('.veil').forEach(v => v.addEventListener('click', e => { if (e.target === v || e.target.hasAttribute('data-close')) closeAll(); }));
+
+  // taxas
+  $('btnTax').addEventListener('click', () => {
+    $('tCom').value = numStr(tax.com); $('tFix').value = money(tax.fix); $('tDes').value = numStr(tax.des);
+    $('veilTax').hidden = false;
+  });
+  [['tCom', 'com'], ['tFix', 'fix'], ['tDes', 'des']].forEach(([id, key]) =>
+    $(id).addEventListener('input', () => { tax[key] = Math.max(0, parseBR($(id).value)); store.set('vf_tax', tax); render(); })
+  );
+
+  // produtos
+  function metaFor(p) {
+    const r = calc(p, p.pm || 'pct');
+    const promo = p.pro > 0 ? ` · promo ${(p.pm || 'pct') === 'pct' ? numStr(p.pro) + '%' : 'R$ ' + money(p.pro)}` : '';
+    return `custo ${money(r.custo)} · lucro ${money(p.luc)}${promo} · cadastrar <i>${r.ok ? 'R$ ' + money(r.cheio) : '—'}</i>`;
+  }
+  function renderProds() {
+    const all = saved.map((p, i) => ({ ...p, idx: i })).concat(EXAMPLES);
+    $('prodList').innerHTML = all.map((p, j) => `
+      <div class="prod">
+        <button class="load" data-j="${j}"><span class="nm">${p.name.replace(/[<>&]/g, '')}${p.ex ? '<span class="tag">exemplo</span>' : ''}</span><span class="meta">${metaFor(p)}</span></button>
+        ${p.ex ? '' : `<button class="del" data-i="${p.idx}" aria-label="Excluir">×</button>`}
+      </div>`).join('');
+    $('prodList').onclick = e => {
+      const d = e.target.closest('.del');
+      if (d) { saved.splice(+d.dataset.i, 1); store.set('vf_prods', saved); renderProds(); return; }
+      const l = e.target.closest('.load');
+      if (l) { load(all[+l.dataset.j]); closeAll(); render(); toast('Produto carregado'); }
+    };
+  }
+  $('btnProd').addEventListener('click', () => { renderProds(); $('veilProd').hidden = false; });
+  $('saveBtn').addEventListener('click', () => {
+    const name = $('saveName').value.trim();
+    if (!name) { $('saveName').focus(); toast('Digite um nome para salvar'); return; }
+    const p = { name, pm: promoMode }; FIELDS.forEach(f => p[f.id] = Math.round(val(f.id) * 100) / 100);
+    saved.unshift(p); store.set('vf_prods', saved); $('saveName').value = ''; renderProds(); toast('Produto salvo');
+  });
+
+  let tt;
+  function toast(msg) {
+    let t = document.querySelector('.toast');
+    if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 1600);
+  }
+
+  let skin = store.get('vf_skin', 'orange');
+  const applySkin = () => { document.body.dataset.skin = skin; const m = document.getElementById('themeColor'); if (m) m.content = skin === 'white' ? '#ffffff' : '#ee4d2d'; };
+  $('btnSkin').addEventListener('click', () => { skin = skin === 'white' ? 'orange' : 'white'; store.set('vf_skin', skin); applySkin(); });
+  applySkin();
+
+  load(EXAMPLES[0]);
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }
+</script>
+</body>
+</html>
