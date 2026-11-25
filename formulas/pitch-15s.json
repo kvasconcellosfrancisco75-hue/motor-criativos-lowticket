@@ -1,0 +1,13 @@
+{
+  "id": "pitch-15s",
+  "nome": "Pitch de 15 segundos (low ticket)",
+  "descricao": "Para público impaciente: a dor numa pergunta, a culpada numa frase, a prova na tela, a garantia de resultado, o preço baixo e uma chamada de compra imediata. Cabe em cerca de 15 segundos.",
+  "cenas": [
+    { "tipo": "titulo", "fala": "{{gancho.texto}}", "tom": "claro", "personagem": "neutra", "dados": { "linhas": "{{gancho.linhas}}", "marca": "{{gancho.marca}}" } },
+    { "tipo": "titulo", "fala": "{{angulo.culpada.fala}}", "tom": "escuro", "personagem": "frustrada", "dados": { "linhas": "{{angulo.culpada.linhas}}", "marca": "{{angulo.culpada.marca}}" } },
+    { "tipo": "prova-video", "fala": "{{produto.entregaveis.fala}}", "tom": "destaque", "dados": { "antes": "{{produto.entregaveis.antes}}", "numero": "{{produto.entregaveis.quantidade}}", "prefixo": "", "depois": "{{produto.entregaveis.unidade_frase}}", "marca": "{{produto.entregaveis.marca}}", "video": "{{produto.ativos.prova_video}}" } },
+    { "tipo": "titulo", "fala": "{{produto.diferencial.fala}}", "tom": "escuro", "personagem": "confiante", "dados": { "linhas": "{{produto.diferencial.linhas}}", "marca": "{{produto.diferencial.marca}}" } },
+    { "tipo": "preco", "fala": "{{produto.oferta.fala}}", "tom": "destaque", "dados": { "valor": "{{produto.oferta.valor}}", "moeda": "{{produto.oferta.moeda}}", "de": "{{produto.oferta.de}}", "selos": "{{produto.oferta.selos}}" } },
+    { "tipo": "cta", "fala": "{{produto.cta.fala}}", "tom": "escuro", "personagem": "apontando", "dados": { "pergunta": "{{produto.cta.pergunta}}", "complemento": "{{produto.cta.complemento}}", "marca": "{{produto.cta.marca}}", "chamada": "{{produto.cta.chamada}}", "botao": "{{produto.cta.botao}}" } }
+  ]
+}

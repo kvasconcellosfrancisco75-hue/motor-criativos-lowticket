@@ -204,7 +204,7 @@ export const Check: React.FC<{ tamanho?: number; fundo: string; traco: string }>
 );
 
 /** Número que rola com borrão vertical. */
-export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?: number; tamanho?: number; cor: string; prefixo?: string; id: string }> = ({
+export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?: number; tamanho?: number; cor: string; prefixo?: string; id: string; decimais?: number }> = ({
   ate,
   de = 0,
   delay = 0,
@@ -213,6 +213,7 @@ export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?
   cor,
   prefixo = "",
   id,
+  decimais = 0,
 }) => {
   const t = useTema();
   const s = useEscala();
@@ -220,7 +221,8 @@ export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?
   const p = interpolate(f, [delay, delay + dur], [0, 1], { ...clamp, easing: Easing.out(Easing.exp) });
   const bruto = interpolate(f, [delay, delay + dur], [0, 1], clamp);
   const velocidade = bruto >= 1 ? 0 : 1 - p;
-  const valor = bruto >= 1 ? ate : Math.round(de + (ate - de) * p);
+  const fator = 10 ** decimais;
+  const valor = bruto >= 1 ? ate : Math.round((de + (ate - de) * p) * fator) / fator;
   const blur = r(velocidade * 34);
   return (
     <div
@@ -243,7 +245,7 @@ export const Contagem: React.FC<{ ate: number; de?: number; delay?: number; dur?
         </filter>
       </svg>
       {prefixo}
-      {valor.toLocaleString("pt-BR")}
+      {valor.toLocaleString("pt-BR", { minimumFractionDigits: decimais, maximumFractionDigits: decimais })}
     </div>
   );
 };

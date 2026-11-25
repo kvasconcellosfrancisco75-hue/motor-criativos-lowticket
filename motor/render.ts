@@ -31,7 +31,7 @@ for (const nome of pastas) {
   const v = lerJSON(path.join(dir, "variacao.json"));
   const temAudio = fs.existsSync(path.join(dir, "narracao.wav"));
   const temPalavras = fs.existsSync(path.join(dir, "palavras.json"));
-  const duracoes = temPalavras ? tempoPelaFala(v.cenas, lerJSON(path.join(dir, "palavras.json"))) : tempoEstimado(v.cenas);
+  const duracoes = temPalavras ? tempoPelaFala(v.cenas, lerJSON(path.join(dir, "palavras.json"))) : tempoEstimado(v.cenas, v.ritmo);
 
   // Pasta pública desta renderização: ativos do produto + narração.
   const publico = path.join(dir, ".publico");

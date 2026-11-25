@@ -73,7 +73,7 @@ for (const formula of escolhidas) {
       for (const formato of formatos) {
         const nome = `${slug(formula.id)}_${slug(angulo.id)}_${slug(gancho.texto ?? gancho).slice(0, 24)}_${formato}`;
         const dir = path.join(saida, nome);
-        salvarJSON(path.join(dir, "variacao.json"), { produto: produto.id, pastaProduto, criacao: nomeCriacao ?? null, formula: formula.id, angulo: angulo.id, formato, tema, cenas });
+        salvarJSON(path.join(dir, "variacao.json"), { produto: produto.id, pastaProduto, criacao: nomeCriacao ?? null, formula: formula.id, angulo: angulo.id, formato, tema, ritmo: produto.ritmo_fala, cenas });
         fs.writeFileSync(
           path.join(dir, "roteiro.md"),
           `# ${produto.nome} · ${formula.nome}\n\nÂngulo: ${angulo.id} · Gancho: ${gancho.tipo ?? "-"} · Formato: ${formato} · ~${est.toFixed(1)} s\n\n## Narração\n\n${narracao}\n\n## Cenas\n\n` +

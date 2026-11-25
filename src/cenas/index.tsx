@@ -252,7 +252,7 @@ const CenaPreco: React.FC<P> = ({ cena }) => {
         <Titulo delay={4} tamanho={150} cor={c.destaque} style={{ paddingTop: 54 * s }}>
           {str(cena.dados.moeda, "R$")}
         </Titulo>
-        <Contagem id="preco" ate={num(cena.dados.valor)} delay={4} dur={20} tamanho={460} cor={c.destaque} />
+        <Contagem id="preco" ate={num(cena.dados.valor)} decimais={Number.isInteger(num(cena.dados.valor)) ? 0 : 2} delay={4} dur={20} tamanho={Number.isInteger(num(cena.dados.valor)) ? 460 : 360} cor={c.destaque} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 40 * s, alignItems: "center" }}>
         {selos.map((x, i) => (
