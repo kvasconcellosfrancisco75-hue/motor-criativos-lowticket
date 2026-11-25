@@ -707,7 +707,9 @@ async function verificar(destino: string): Promise<Verificacao> {
     v.titulo = limpar(pg.titulo).slice(0, 120);
     v.precos_pagina = [...new Set(precos(pg.texto).map((x) => x.valor))].sort((p, q) => p - q).slice(0, 12);
     // Loja virtual ou página falando de frete: produto físico. O checkout ainda é lido (preço e bumps ficam no registro).
-    if (pg.loja) v.fisico = `loja ${pg.loja}`;
+    // O site da própria plataforma (nuvemshop.com.br, shopify.com...) não é uma loja dela.
+    const sitePlataforma = /(^|\.)(nuvemshop|tiendanube|shopify|vtex|tray|lojaintegrada)\.com(\.br)?$/i.test(host(destino));
+    if (pg.loja && !sitePlataforma) v.fisico = `loja ${pg.loja}`;
     else if (FRETE_PAGINA.test(pg.texto)) v.fisico = `página com "${pg.texto.match(FRETE_PAGINA)![0]}"`;
     if (pg.checkout) {
       v.checkout = pg.checkout;
