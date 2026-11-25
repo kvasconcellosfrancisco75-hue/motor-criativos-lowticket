@@ -27,7 +27,12 @@ export type TipoCena =
   | "prova-video"
   | "batidas"
   | "preco"
-  | "cta";
+  | "cta"
+  | "caixa"
+  | "cartoes"
+  | "voando"
+  | "celular"
+  | "etiqueta";
 
 /** Uma cena já resolvida (sem {{variáveis}}), pronta para renderizar. */
 export type Cena = {
@@ -37,6 +42,8 @@ export type Cena = {
   tom?: Tom;
   /** Arquivo de imagem da personagem, relativo à pasta de ativos do produto. */
   personagem?: string;
+  /** Duração fixa em segundos (para criativos sem narração, no ritmo da música). */
+  segundos?: number;
   dados: Record<string, unknown>;
 };
 

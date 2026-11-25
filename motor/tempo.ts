@@ -22,6 +22,7 @@ const norm = (s: string) =>
 /** Sem áudio: estima a duração de cada cena pelo número de palavras faladas. */
 export const tempoEstimado = (cenas: Cena[], ritmo = RITMO): number[] =>
   cenas.map((c, i) => {
+    if (typeof c.segundos === "number") return Math.round(c.segundos * FPS);
     const seg = Math.max(1.3, contarPalavras(c.fala) / ritmo + 0.3) + (i === cenas.length - 1 ? RESPIRO_FINAL : 0);
     return Math.round(seg * FPS);
   });

@@ -21,6 +21,7 @@ import {
   useTema,
 } from "../comum";
 import type { Cena, TipoCena } from "../tipos";
+import { CenaCaixa, CenaCartoes, CenaCelular, CenaEtiqueta, CenaVoando } from "./animadas";
 
 type P = { cena: Cena; dur: number };
 const str = (v: unknown, padrao = "") => (typeof v === "string" ? v : padrao);
@@ -377,4 +378,9 @@ export const CENAS: Record<TipoCena, React.FC<P>> = {
   batidas: CenaBatidas,
   preco: CenaPreco,
   cta: CenaCTA,
+  caixa: CenaCaixa,
+  cartoes: CenaCartoes,
+  voando: CenaVoando,
+  celular: CenaCelular,
+  etiqueta: CenaEtiqueta,
 };

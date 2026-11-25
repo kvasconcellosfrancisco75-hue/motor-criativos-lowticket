@@ -1,0 +1,81 @@
+{
+  "id": "historia-loop-15s",
+  "nome": "História animada em loop (15 s, sem narração)",
+  "descricao": "Motion graphics no ritmo da música, sem voz: começa pelo resultado, mostra o problema com objetos que voam, a solução na tela do celular, a prova no preço e fecha no CTA, que emenda de volta no começo (loop). Inspirado em anúncios animados de 15 s que contam a história só com imagem.",
+  "cenas": [
+    {
+      "tipo": "caixa",
+      "segundos": 1.9,
+      "tom": "claro",
+      "fala": "{{produto.historia.resultado.fala}}",
+      "dados": {
+        "linhas": "{{produto.historia.resultado.linhas}}",
+        "marca": "{{produto.historia.resultado.marca}}",
+        "selo": "{{produto.historia.resultado.selo}}",
+        "moeda": "{{produto.historia.resultado.moeda}}"
+      }
+    },
+    {
+      "tipo": "cartoes",
+      "segundos": 2.4,
+      "tom": "claro",
+      "fala": "{{produto.historia.custos.fala}}",
+      "dados": {
+        "linhas": "{{produto.historia.custos.linhas}}",
+        "marca": "{{produto.historia.custos.marca}}",
+        "itens": "{{produto.historia.custos.itens}}",
+        "total": "{{produto.historia.custos.total}}"
+      }
+    },
+    {
+      "tipo": "voando",
+      "segundos": 2.6,
+      "tom": "escuro",
+      "fala": "{{produto.historia.problema.fala}}",
+      "dados": {
+        "linhas": "{{produto.historia.problema.linhas}}",
+        "marca": "{{produto.historia.problema.marca}}",
+        "itens": "{{produto.historia.problema.itens}}",
+        "moeda": "{{produto.historia.problema.moeda}}"
+      }
+    },
+    {
+      "tipo": "celular",
+      "segundos": 2.6,
+      "tom": "destaque",
+      "fala": "{{produto.historia.solucao.fala}}",
+      "dados": {
+        "linhas": "{{produto.historia.solucao.linhas}}",
+        "marca": "{{produto.historia.solucao.marca}}",
+        "video": "{{produto.ativos.prova_video}}"
+      }
+    },
+    {
+      "tipo": "etiqueta",
+      "segundos": 2.6,
+      "tom": "claro",
+      "fala": "{{produto.historia.prova.fala}}",
+      "dados": {
+        "linhas": "{{produto.historia.prova.linhas}}",
+        "marca": "{{produto.historia.prova.marca}}",
+        "cheio": "{{produto.historia.prova.cheio}}",
+        "desconto": "{{produto.historia.prova.desconto}}",
+        "final": "{{produto.historia.prova.final}}",
+        "lucro": "{{produto.historia.prova.lucro}}"
+      }
+    },
+    {
+      "tipo": "cta",
+      "segundos": 3.2,
+      "tom": "escuro",
+      "fala": "{{produto.historia.cta.fala}}",
+      "dados": {
+        "pergunta": "{{produto.historia.cta.pergunta}}",
+        "complemento": [],
+        "marca": "{{produto.historia.cta.marca}}",
+        "chamada": "{{produto.historia.cta.chamada}}",
+        "botao": "{{produto.historia.cta.botao}}"
+      }
+    }
+  ]
+}
