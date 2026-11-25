@@ -67,6 +67,10 @@ O preço registrado é sempre o do **checkout**, nunca o do criativo ou da legen
    completo e lê de novo, porque alguns só aparecem depois disso. Ele nunca preenche e-mail, telefone, documento ou
    cartão e nunca envia o formulário.
 
+**Produto físico sai do radar**: loja virtual (Shopify, Nuvemshop, Loja Integrada, VTEX, Tray) ou checkout/página
+com frete e entrega física ("calcular frete", "prazo de entrega", Sedex, Correios...). Lojas WooCommerce que vendem
+arquivo digital continuam. No app, essas ofertas ficam em "Outras" com o motivo.
+
 Sem checkout encontrado, a oferta fica sem preço ("checkout não encontrado"). Para usar o preço da página de vendas
 nesses casos, ligue `preco_da_pagina_sem_checkout` em `radar/config.json`.
 

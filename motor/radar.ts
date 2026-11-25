@@ -413,6 +413,8 @@ type Verificacao = {
   preenchido?: boolean;
   /** O checkout mostrou valores em outra moeda (alguns convertem pelo país do IP). */
   moeda?: string;
+  /** Produto físico (loja virtual ou checkout com frete): não é infoproduto e sai do radar. Guarda o motivo. */
+  fisico?: string;
   plataforma?: string;
   checkout?: string;
   erro?: string;
@@ -428,6 +430,21 @@ const ehCheckout = (url: string) => {
     return false;
   }
 };
+
+/** Plataformas de loja virtual (produto físico). WooCommerce fica de fora: muita loja Woo vende arquivo digital. */
+const LOJAS: [RegExp, string][] = [
+  [/cdn\.shopify\.com|myshopify\.com|Shopify\.(shop|theme)/, "Shopify"],
+  [/nuvemshop|tiendanube|d26lpennugtm8s\.cloudfront\.net/i, "Nuvemshop"],
+  [/lojaintegrada/i, "Loja Integrada"],
+  [/vtex(assets|commercestable)?\.com|vteximg/i, "VTEX"],
+  [/tray\.com\.br|traycorp/i, "Tray"],
+];
+/** Frete e entrega física. "Entrega imediata" e "receba no e-mail" (digitais) não contam. */
+const FRETE =
+  /(\bfretes?\b|calcul(e|ar) (o )?(frete|prazo|entrega)|prazo de entrega|forma de entrega|op[çc][õo]es de (frete|entrega)|m[ée]todo de envio|sedex|\bpac\b|transportadora|correios|pagamento na entrega|endere[çc]o de entrega|enviamos para todo|c[óo]digo de rastre)/i;
+const motivoFisico = (texto: string) => texto.match(FRETE)?.[0];
+/** Na página de vendas, só os sinais fortes: página de infoproduto às vezes diz "nada chega pelos Correios". */
+const FRETE_PAGINA = /(calcul(e|ar) (o )?frete|frete gr[áa]tis|prazo de entrega|pagamento na entrega|enviamos para todo|entregamos em todo|c[óo]digo de rastre)/i;
 
 /** Botões que levam ao checkout ("Quero comprar", "Garantir minha vaga"...). */
 const BOTAO_COMPRA = /(comprar|compre|quero|garant|adquir|acessar agora|acesso imediato|sim,? eu|matricul|inscrev|come[çc]ar agora|pegar|baixar agora|liberar|aproveitar|finalizar)/i;
@@ -487,15 +504,16 @@ function baixarHTML(url: string) {
   return {
     titulo: limpar(html.match(/<title[^>]*>([^<]*)/i)?.[1] ?? ""),
     links: [...html.matchAll(/href=["']([^"']+)["']/gi)].map((m) => m[1]),
+    html,
     texto: html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " "),
   };
 }
 
 /** Página de vendas: título, valores citados e o endereço do checkout (pelo link ou clicando no botão de compra). */
-export async function lerVendas(url: string): Promise<{ titulo: string; texto: string; checkout?: string }> {
+export async function lerVendas(url: string): Promise<{ titulo: string; texto: string; checkout?: string; loja?: string }> {
   if (!(await iniciarNavegador())) {
     const h = baixarHTML(url);
-    return { titulo: h.titulo, texto: h.texto, checkout: ehCheckout(url) ? url : h.links.find(ehCheckout) };
+    return { titulo: h.titulo, texto: h.texto, checkout: ehCheckout(url) ? url : h.links.find(ehCheckout), loja: LOJAS.find(([re]) => re.test(h.html))?.[1] };
   }
   const { ctx, p } = await novaAba();
   try {
@@ -505,7 +523,9 @@ export async function lerVendas(url: string): Promise<{ titulo: string; texto: s
     await p.waitForTimeout(800);
     const titulo = await p.title();
     const texto = await textoDe(p);
-    if (ehCheckout(p.url())) return { titulo, texto, checkout: p.url() };
+    const html: string = await p.content();
+    const loja = LOJAS.find(([re]) => re.test(html))?.[1];
+    if (ehCheckout(p.url())) return { titulo, texto, checkout: p.url(), loja };
     let checkout = (await linksDe(p)).find(ehCheckout);
     // Sem link direto: clica no botão de compra e vê onde vai parar (mesma aba, aba nova ou link revelado).
     if (!checkout) {
@@ -528,7 +548,7 @@ export async function lerVendas(url: string): Promise<{ titulo: string; texto: s
         if (!checkout && p.url() !== url) await p.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
       }
     }
-    return { titulo, texto, checkout };
+    return { titulo, texto, checkout, loja };
   } finally {
     await ctx.close();
   }
@@ -597,7 +617,7 @@ function bumpsPeloTexto(texto: string): Bump[] {
 /** O front aparece em outra moeda? (bumps às vezes ficam em reais enquanto o produto principal vem em dólar) */
 const semReais = async (p: any) => {
   const t = await textoDe(p);
-  return !/R\$\s*\d/.test(t) || /(US\$|\$)\s?\d/.test(t.replace(/R\$/g, ""));
+  return !/R\$\s*\d/.test(t) || /(US\$|USD|EUR|€|\$)\s?\d/.test(t.replace(/R\$/g, ""));
 };
 
 /** Escolhe "Brasil" no seletor de país do checkout (Hotmart, Eduzz, Greenn e outros que usam o país do IP). */
@@ -625,10 +645,10 @@ async function trocarParaBrasil(p: any) {
   return true;
 }
 
-export async function lerCheckout(url: string): Promise<Pick<Verificacao, "preco" | "precos_checkout" | "bumps" | "preenchido" | "moeda">> {
+export async function lerCheckout(url: string): Promise<Pick<Verificacao, "preco" | "precos_checkout" | "bumps" | "preenchido" | "moeda" | "fisico">> {
   if (!(await iniciarNavegador())) {
     const t = baixarHTML(url).texto;
-    return { preco: precoCheckout(t), precos_checkout: [...new Set(precos(t).map((x) => x.valor))].sort((a, b) => a - b), bumps: bumpsPeloTexto(t) };
+    return { fisico: motivoFisico(t) ? `checkout com "${motivoFisico(t)}"` : undefined, preco: precoCheckout(t), precos_checkout: [...new Set(precos(t).map((x) => x.valor))].sort((a, b) => a - b), bumps: bumpsPeloTexto(t) };
   }
   const { ctx, p } = await novaAba();
   try {
@@ -662,13 +682,14 @@ export async function lerCheckout(url: string): Promise<Pick<Verificacao, "preco
     const lista = [...bumps.map(lerBump), ...bumpsPeloTexto(resto)].filter((b) => b.preco !== undefined);
     if (process.env.RADAR_DEBUG) console.log(JSON.stringify({ url: p.url(), blocos: bumps, resto: resto.replace(/\s+/g, " ").slice(0, 1500) }, null, 1));
     const tudo = await textoDe(p);
-    const moeda = /R\$\s*\d/.test(tudo) ? undefined : /US\$\s*\d|\$\s?\d/.test(tudo) ? "USD" : /€\s?\d/.test(tudo) ? "EUR" : undefined;
+    const moeda = /R\$\s*\d/.test(tudo) ? undefined : /US\$\s*\d|USD\s?\d|\$\s?\d/.test(tudo) ? "USD" : /€\s?\d|EUR\s?\d/.test(tudo) ? "EUR" : undefined;
     return {
       preco: precoCheckout(resto),
       precos_checkout: [...new Set(precos(tudo).map((x) => x.valor))].sort((a, b) => a - b).slice(0, 15),
       bumps: [...new Map(lista.filter((b) => b.nome || b.preco).map((b) => [`${b.nome}|${b.preco}`, b])).values()],
       preenchido,
       moeda,
+      fisico: motivoFisico(tudo) ? `checkout com "${motivoFisico(tudo)}"` : undefined,
     };
   } finally {
     await ctx.close();
@@ -685,11 +706,17 @@ async function verificar(destino: string): Promise<Verificacao> {
     const pg = await lerVendas(destino);
     v.titulo = limpar(pg.titulo).slice(0, 120);
     v.precos_pagina = [...new Set(precos(pg.texto).map((x) => x.valor))].sort((p, q) => p - q).slice(0, 12);
+    // Loja virtual ou página falando de frete: produto físico. O checkout ainda é lido (preço e bumps ficam no registro).
+    // O site da própria plataforma (nuvemshop.com.br, shopify.com...) não é uma loja dela.
+    const sitePlataforma = /(^|\.)(nuvemshop|tiendanube|shopify|vtex|tray|lojaintegrada)\.com(\.br)?$/i.test(host(destino));
+    if (pg.loja && !sitePlataforma) v.fisico = `loja ${pg.loja}`;
+    else if (FRETE_PAGINA.test(pg.texto)) v.fisico = `página com "${pg.texto.match(FRETE_PAGINA)![0]}"`;
     if (pg.checkout) {
       v.checkout = pg.checkout;
       v.plataforma = plataformaDe(pg.checkout) ?? "própria";
       const ck = await lerCheckout(pg.checkout);
-      Object.assign(v, ck);
+      const fisico = v.fisico ?? ck.fisico;
+      Object.assign(v, ck, { fisico });
       if (v.preco !== undefined) v.fonte = "checkout";
     }
     if (v.preco === undefined && cfg.preco_da_pagina_sem_checkout) {
@@ -720,6 +747,10 @@ type Oferta = {
 
 function avaliar(o: Oferta) {
   const m = o.metricas;
+  if (o.verificacao?.fisico) {
+    [o.falhas, o.status] = [[`produto físico (${o.verificacao.fisico})`], "fora"];
+    return;
+  }
   const c: [boolean | null, string][] = [
     [naFaixa(o.preco), o.preco === undefined ? (o.verificacao && !o.verificacao.checkout ? "checkout não encontrado" : "preço do checkout não encontrado") : `preço R$ ${o.preco} fora da faixa de R$ ${crit.preco_min} a R$ ${crit.preco_max}`],
     [m.ativos >= crit.min_ativos, `${m.ativos} anúncios ativos (mínimo ${crit.min_ativos})`],
@@ -848,7 +879,7 @@ async function main() {
       o.verificacao = await verificar(o.metricas.url || `https://${o.metricas.destino}`);
       o.preco = o.verificacao.preco;
       const v = o.verificacao;
-      const extra = [v.plataforma, v.bumps.length ? `${v.bumps.length} bump(s): ${v.bumps.map((b) => brl(b.preco)).join(", ")}` : "", v.preenchido ? "nome preenchido" : "", v.moeda ? `moeda ${v.moeda}` : "", !v.checkout ? "checkout não encontrado" : ""].filter(Boolean).join(" · ");
+      const extra = [v.fisico ? `FÍSICO: ${v.fisico}` : "", v.plataforma, v.bumps.length ? `${v.bumps.length} bump(s): ${v.bumps.map((b) => brl(b.preco)).join(", ")}` : "", v.preenchido ? "nome preenchido" : "", v.moeda ? `moeda ${v.moeda}` : "", !v.checkout ? "checkout não encontrado" : ""].filter(Boolean).join(" · ");
       console.log(`  ${String(i + 1).padStart(2)}. ${o.chave.padEnd(40)} ${v.erro ? `erro: ${v.erro}` : `${brl(o.preco).padEnd(10)} ${extra}`}`);
     }
     if (navegador) await navegador.close();
@@ -856,7 +887,7 @@ async function main() {
 
   // 3. Aprofundamento: todos os anúncios ativos das páginas que anunciam as ofertas low ticket
   const nAprofundar = Number(a.aprofundar ?? cfg.aprofundar ?? 12);
-  const alvos = ofertas.filter((o) => naFaixa(o.preco)).slice(0, nAprofundar);
+  const alvos = ofertas.filter((o) => naFaixa(o.preco) && !o.verificacao?.fisico).slice(0, nAprofundar);
   if (!a["sem-aprofundar"] && alvos.length) {
     const limitePag = Number(cfg.apify?.limite_por_pagina ?? 60);
     const idsPag = [...new Set(alvos.flatMap((o) => o.metricas.paginas.slice(0, cfg.paginas_por_oferta ?? 2).map((p) => p.id)).filter(Boolean))];
@@ -927,7 +958,7 @@ async function main() {
   const quase = ofertas.filter((o) => o.status === "quase").length;
   const resumo = [
     `${a["de-arquivo"] ? "Coleta reaproveitada" : `${termos.length} buscas`}, ${brutos.length} anúncios, ${validos.length} de oferta, ${ofertas.length} ofertas distintas.`,
-    `${ofertas.filter((o) => o.verificacao).length} páginas abertas, ${ofertas.filter((o) => o.verificacao?.checkout).length} checkouts lidos, ${ofertas.filter((o) => o.verificacao?.bumps.length).length} com order bump, ${ofertas.filter((o) => naFaixa(o.preco)).length} ofertas low ticket, ${ofertas.filter((o) => o.aprofundada).length} aprofundadas.`,
+    `${ofertas.filter((o) => o.verificacao).length} páginas abertas, ${ofertas.filter((o) => o.verificacao?.checkout).length} checkouts lidos, ${ofertas.filter((o) => o.verificacao?.bumps.length).length} com order bump, ${ofertas.filter((o) => o.verificacao?.fisico).length} produtos físicos descartados, ${ofertas.filter((o) => naFaixa(o.preco) && !o.verificacao?.fisico).length} ofertas low ticket, ${ofertas.filter((o) => o.aprofundada).length} aprofundadas.`,
     `Resultado: **${esc} escalada(s)** e ${quase} quase lá.`,
     dataAnterior ? `Tendência comparada com a coleta de ${dataAnterior}.` : "Primeira coleta: a tendência aparece a partir da próxima.",
     fonte === "apify" ? `Custo no Apify desta execução: US$ ${custoTotal.toFixed(2)}.` : `Fonte: navegador próprio (sem custo)${falhasBusca ? `; ${falhasBusca} busca(s) sem resultado` : ""}.`,
@@ -966,7 +997,7 @@ async function main() {
         anuncios: brutos.length,
         validos: validos.length,
         ofertas: ofertas.length,
-        low_ticket: ofertas.filter((o) => naFaixa(o.preco)).length,
+        low_ticket: ofertas.filter((o) => naFaixa(o.preco) && !o.verificacao?.fisico).length,
         aprofundadas: ofertas.filter((o) => o.aprofundada).length,
         escaladas: esc,
         quase,
@@ -982,6 +1013,7 @@ async function main() {
         bumps: o.verificacao?.bumps ?? [],
         bumps_apos_nome: !!o.verificacao?.preenchido,
         moeda_checkout: o.verificacao?.moeda,
+        fisico: o.verificacao?.fisico,
         titulo: o.verificacao?.titulo,
         url: o.metricas.url,
         ativos: o.metricas.ativos,
