@@ -617,7 +617,7 @@ function bumpsPeloTexto(texto: string): Bump[] {
 /** O front aparece em outra moeda? (bumps às vezes ficam em reais enquanto o produto principal vem em dólar) */
 const semReais = async (p: any) => {
   const t = await textoDe(p);
-  return !/R\$\s*\d/.test(t) || /(US\$|\$)\s?\d/.test(t.replace(/R\$/g, ""));
+  return !/R\$\s*\d/.test(t) || /(US\$|USD|EUR|€|\$)\s?\d/.test(t.replace(/R\$/g, ""));
 };
 
 /** Escolhe "Brasil" no seletor de país do checkout (Hotmart, Eduzz, Greenn e outros que usam o país do IP). */
@@ -682,7 +682,7 @@ export async function lerCheckout(url: string): Promise<Pick<Verificacao, "preco
     const lista = [...bumps.map(lerBump), ...bumpsPeloTexto(resto)].filter((b) => b.preco !== undefined);
     if (process.env.RADAR_DEBUG) console.log(JSON.stringify({ url: p.url(), blocos: bumps, resto: resto.replace(/\s+/g, " ").slice(0, 1500) }, null, 1));
     const tudo = await textoDe(p);
-    const moeda = /R\$\s*\d/.test(tudo) ? undefined : /US\$\s*\d|\$\s?\d/.test(tudo) ? "USD" : /€\s?\d/.test(tudo) ? "EUR" : undefined;
+    const moeda = /R\$\s*\d/.test(tudo) ? undefined : /US\$\s*\d|USD\s?\d|\$\s?\d/.test(tudo) ? "USD" : /€\s?\d|EUR\s?\d/.test(tudo) ? "EUR" : undefined;
     return {
       preco: precoCheckout(resto),
       precos_checkout: [...new Set(precos(tudo).map((x) => x.valor))].sort((a, b) => a - b).slice(0, 15),
