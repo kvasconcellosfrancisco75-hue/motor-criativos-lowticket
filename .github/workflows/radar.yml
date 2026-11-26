@@ -4,7 +4,9 @@ name: Radar diário
 
 on:
   schedule:
-    - cron: "17 9 * * *" # 06:17 em Brasília (o GitHub pode atrasar alguns minutos)
+    # Reserva: o disparo principal vem de uma tarefa agendada às 06:17 (Brasília). O agendamento do GitHub
+    # costuma atrasar horas; quando chega, só coleta se o dia ainda não tiver coleta no app.
+    - cron: "17 9 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -16,14 +18,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
+      - name: Já houve coleta hoje?
+        id: hoje
+        if: github.event_name == 'schedule'
+        env:
+          RADAR_API: ${{ secrets.RADAR_API }}
+          RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
+        run: |
+          dia=$(date -u +%F) # o radar grava a coleta pela data em UTC
+          ultima=$(curl -sS "$RADAR_API/api/historico" -H "Authorization: Bearer $RADAR_TOKEN" | grep -o '"data":"[0-9-]*"' | head -1 | cut -d'"' -f4)
+          echo "Última coleta no app: ${ultima:-nenhuma}; hoje: $dia"
+          if [ "$ultima" = "$dia" ]; then echo "pular=sim" >> "$GITHUB_OUTPUT"; fi
+
       - uses: actions/checkout@v4
+        if: steps.hoje.outputs.pular != 'sim'
 
       - uses: actions/setup-node@v4
+        if: steps.hoje.outputs.pular != 'sim'
         with:
           node-version: 22
           cache: npm
 
       - name: Dependências
+        if: steps.hoje.outputs.pular != 'sim'
         run: |
           npm ci --no-audit --no-fund
           npm install --no-save --no-audit --no-fund playwright@1.63.0
@@ -31,6 +48,7 @@ jobs:
 
       # Quando o Facebook bloqueia as buscas, a coleta sai vazia e o radar falha de propósito: tenta até 3 vezes.
       - name: Coleta (até 3 tentativas)
+        if: steps.hoje.outputs.pular != 'sim'
         env:
           RADAR_API: ${{ secrets.RADAR_API }}
           RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
