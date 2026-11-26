@@ -19,6 +19,7 @@ fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─
 | 4. Cenas | `src/cenas` | Cenas animadas genéricas (título, citação, contador, lista, prova em vídeo, slogan, preço, CTA). Não sabem qual é o produto: cores e fontes vêm da ficha. |
 | 5. Produção | `motor/` | Gera o lote, prepara a voz, sincroniza as cenas com a fala, renderiza e confere. |
 | 6. Saída | `saida/<produto>/<lote>/` | Um vídeo por variação e formato, `roteiro.md`, `legenda.txt`, `quadros.png` e a planilha `variacoes.csv`. |
+| 7. Cérebro | `<produto>/cerebro/` | Os resultados dos anúncios no ar e as suas lições. A próxima criação parte do que vendeu e evita o que não vendeu. Veja [docs/cerebro.md](docs/cerebro.md). |
 
 ### Fórmulas incluídas
 
@@ -54,6 +55,10 @@ npm run render -- --lote saida/exemplo-receitas/lote-01
 
 # 5. Conferir duração e volume e gerar a folha de quadros
 npm run conferir -- --lote saida/exemplo-receitas/lote-01
+
+# 6. Depois que os anúncios rodarem: importar os resultados para o cérebro (veja docs/cerebro.md)
+npm run resultados -- --produto produtos/exemplo --csv export-do-gerenciador.csv
+npm run cerebro -- --produto produtos/exemplo --licao "o que você aprendeu"
 ```
 
 Sem narração, o motor estima o tempo de cada cena pelo texto (cerca de 2,8 palavras por segundo). Serve
@@ -95,8 +100,11 @@ O render lê os ativos (`ativos/`) da pasta do produto, onde quer que ela esteja
 - **Margens seguras:** nada importante no rodapé, que o Reels e o Stories cobrem com a interface.
 - **Restrições na ficha** (por exemplo, sem antes e depois, sem promessa de resultado), para quem revisa os roteiros.
 
+- **Aprender com o resultado:** o cérebro do produto aponta os ganchos vencedores e perdedores pelo CPA e pela taxa de
+  gancho, e a criação seguinte parte deles.
+
 O que continua sendo humano: ouvir a voz, checar as regras da plataforma de anúncios e os números
-citados, e escolher as variações vencedoras pelos resultados.
+citados, e decidir quanto escalar cada vencedor.
 
 ## Licença
 

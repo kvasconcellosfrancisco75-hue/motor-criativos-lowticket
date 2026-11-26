@@ -5,3 +5,5 @@ saida
 # produtos reais ficam fora do repositório público
 produtos-privados
 radar/dados
+# resultados de anúncios (cérebro) nunca vão para o repositório público
+produtos/*/cerebro

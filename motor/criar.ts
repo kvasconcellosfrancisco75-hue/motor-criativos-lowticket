@@ -9,12 +9,16 @@
  * Modo api (padrão): chama a API da Anthropic (precisa de ANTHROPIC_API_KEY ou `ant auth login`).
  * Saída em <produto>/criacoes/<nome>.json (entrada de `npm run roteiros`) e <nome>.md (folha de revisão).
  * Para reprovar algo, troque "aprovado" para false no .json antes de gerar os roteiros.
+ *
+ * Com resultados no cérebro do produto (<produto>/cerebro/, veja `npm run resultados` e `npm run cerebro`),
+ * o pedido traz os ganchos que venderam, os que perderam, os padrões e as lições anotadas.
  */
 import fs from "node:fs";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { paraCriacao } from "./cerebro";
 import { lerReferencias } from "./referencias";
 import { carregarFormulas, montarCenas, narracaoDe, segundosEstimados } from "./montar";
 import { args, contarPalavras, lerJSON, salvarJSON, slug } from "./util";
@@ -127,6 +131,9 @@ Quando o pedido trouxer "modelos que já provaram funcionar" (anúncios que est�
 const fatos = { ...produto };
 for (const k of ["visual", "personagem", "ativos", "angulos", "referencias", "formatos", "formulas", "observacao"]) delete fatos[k];
 
+// Cérebro: o que os anúncios no ar já ensinaram sobre este produto.
+const cerebro = paraCriacao(pastaProduto, produto);
+
 const pedido = `Ficha do produto (fatos):
 ${JSON.stringify(fatos, null, 2)}
 
@@ -145,7 +152,7 @@ ${
   nucleo
     ? `NÚCLEO APROVADO: o produto já tem um corpo de anúncio que funciona. Ele é fixo e entra depois do seu trecho:\n"${[produto.mecanismo?.fala, produto.entregaveis?.fala, produto.slogan?.fala, produto.cta?.fala].filter(Boolean).join(" ")}"\nNão escreva "copy". Crie só o começo de cada vídeo (gancho, promessa e número): curto, e que leve naturalmente à primeira frase do núcleo. Mantenha a pessoa do público explícita (quem ela é) e a dor concreta.\n\n`
     : ""
-}Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos${nucleo ? "" : " e a copy completa"}.`;
+}${cerebro ? `${cerebro}\n\n` : ""}Crie ${nAngulos} ângulos, cada um com ${nGanchos} ganchos${nucleo ? "" : " e a copy completa"}.`;
 
 // ---------- Validação ----------
 
@@ -285,7 +292,7 @@ function salvar(r: TResposta, modelo: string, problemas: Problema[]) {
   salvarJSON(path.join(pastaCriacoes, `${nome}.json`), { produto: produto.id, criado_em: agora.toISOString(), modelo, angulos });
 
   const f = formulas[0];
-  const md = [`# ${produto.nome} · ${nome}`, "", `${angulos.length} ângulos, ${angulos.reduce((s, x) => s + x.ganchos.length, 0)} ganchos. Gerado por ${modelo}.`, "Para reprovar, troque \"aprovado\" para false no .json.", ""];
+  const md = [`# ${produto.nome} · ${nome}`, "", `${angulos.length} ângulos, ${angulos.reduce((s, x) => s + x.ganchos.length, 0)} ganchos. Gerado por ${modelo}${cerebro ? ", com o cérebro do produto" : ""}.`, "Para reprovar, troque \"aprovado\" para false no .json.", ""];
   for (const an of angulos) {
     md.push(`## ${an.aprovado ? "" : "⚠ "}${an.id} · ${an.base} · consciência: ${an.consciencia}`, "", `**Dor:** ${an.dor}`, "");
     if (an.referencia && an.referencia !== "nenhuma") md.push(`**Baseado em:** ${an.referencia} — ${an.aproveita}`, "");

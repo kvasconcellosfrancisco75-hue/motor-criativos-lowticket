@@ -12,7 +12,9 @@
     "tipos": "tsc --noEmit",
     "referencias": "tsx motor/referencias.ts",
     "coletar": "tsx motor/coletar.ts",
-    "radar": "tsx motor/radar.ts"
+    "radar": "tsx motor/radar.ts",
+    "resultados": "tsx motor/resultados.ts",
+    "cerebro": "tsx motor/cerebro.ts"
   },
   "license": "MIT",
   "dependencies": {

@@ -32,6 +32,7 @@ roteiro sincronizado com a voz e vídeos renderizados em lote. O catálogo vira 
 | Headlines e textos de anúncio em lote | parcial (sai na criação) | fase 2 |
 | Checagem de termos sensíveis antes de subir | falta | fase 2 |
 | Coleta diária automática e app no telefone | **existe** | `motor/radar.ts`, `app/`, [app.md](app.md) |
+| Resultados dos anúncios voltando para a criação (cérebro) | **existe** | `motor/resultados.ts`, `motor/cerebro.ts`, [cerebro.md](cerebro.md) |
 
 ## Fase 1 — Radar e análise (continua CLI, sem servidor)
 
