@@ -14,6 +14,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { anotarNoCofre, cofreDe, licoesDoCofre } from "./cofre";
 import { args, lerJSON, salvarJSON } from "./util";
 
 export type Numeros = { gasto: number; impressoes: number; plays3s: number; cliques: number; compras: number; receita: number };
@@ -49,7 +50,13 @@ export function lerCerebro(pastaProduto: string, produtoId = ""): Cerebro {
 
 export const salvarCerebro = (pastaProduto: string, c: Cerebro) => salvarJSON(path.join(pastaCerebro(pastaProduto), "resultados.json"), c);
 
-export function lerLicoes(pastaProduto: string): string[] {
+/** Lições de cerebro/licoes.md e, com o Obsidian configurado, da nota Lições do cofre. */
+export function lerLicoes(pastaProduto: string, produto?: any): string[] {
+  const cofre = produto ? cofreDe(pastaProduto, produto) : undefined;
+  return [...new Set([...lerLicoesLocais(pastaProduto), ...(cofre ? licoesDoCofre(cofre, produto) : [])])];
+}
+
+export function lerLicoesLocais(pastaProduto: string): string[] {
   const arq = path.join(pastaCerebro(pastaProduto), "licoes.md");
   if (!fs.existsSync(arq)) return [];
   return fs
@@ -154,7 +161,7 @@ export function resumo(pastaProduto: string, produto: any): string {
   const c = lerCerebro(pastaProduto, produto.id);
   const m = metas(produto);
   const gs = porGancho(c, m).sort(ordem);
-  const licoes = lerLicoes(pastaProduto);
+  const licoes = lerLicoes(pastaProduto, produto);
   const total = somar(Object.values(c.resultados));
   const it = indicadores(total);
   const md = [
@@ -204,7 +211,7 @@ export function paraCriacao(pastaProduto: string, produto: any): string {
   const c = lerCerebro(pastaProduto, produto.id);
   const m = metas(produto);
   const gs = porGancho(c, m);
-  const licoes = lerLicoes(pastaProduto);
+  const licoes = lerLicoes(pastaProduto, produto);
   if (!gs.length && !licoes.length) return "";
   const desc = (g: Gancho) => {
     const i = indicadores(g);
@@ -232,12 +239,16 @@ if (require.main === module) {
   }
   const pasta = path.resolve(a.produto);
   const produto = lerJSON(path.join(pasta, "produto.json"));
+  const cofre = cofreDe(pasta, produto, a.cofre);
   if (a.licao && a.licao !== "true") {
-    anotarLicao(pasta, a.licao);
-    console.log(`Lição anotada em ${path.join(pastaCerebro(pasta), "licoes.md")}. A próxima criação vai levar em conta.`);
+    if (cofre) anotarNoCofre(cofre, produto, a.licao);
+    else anotarLicao(pasta, a.licao);
+    console.log(`Lição anotada${cofre ? " na nota Lições do Obsidian" : ` em ${path.join(pastaCerebro(pasta), "licoes.md")}`}. A próxima criação vai levar em conta.`);
   }
   const md = resumo(pasta, produto);
   fs.mkdirSync(pastaCerebro(pasta), { recursive: true });
   fs.writeFileSync(path.join(pastaCerebro(pasta), "cerebro.md"), md);
   console.log(md);
+  // Carregado só aqui: o obsidian.ts também usa este arquivo.
+  if (cofre) require("./obsidian").sincronizar(pasta, produto, a.cofre);
 }

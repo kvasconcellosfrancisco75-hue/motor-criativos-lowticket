@@ -30,6 +30,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { ApifyClient } from "apify-client";
+import { cofreDe } from "./cofre";
+import { exportarRadar } from "./obsidian";
 import { args, lerJSON, salvarJSON } from "./util";
 import { Biblioteca } from "./biblioteca";
 
@@ -945,6 +947,9 @@ async function main() {
         .join(";"),
     );
   fs.writeFileSync(path.join(pastaSaida, "ofertas.csv"), [cab.join(";"), ...csv].join("\n") + "\n");
+  // Com --cofre ou OBSIDIAN_COFRE, a coleta também vai para o Obsidian (nota do dia e uma nota por oferta).
+  const cofre = cofreDe(undefined, undefined, a.cofre);
+  if (cofre) console.log(`Obsidian: ${exportarRadar(cofre, path.join(pastaSaida, "ofertas.json")).ofertas} oferta(s) no cofre.`);
   console.log(`\n${resumo.map((r) => r.replace(/\*\*/g, "")).join("\n")}\nRelatório: ${path.join(pastaSaida, "ofertas.md")}`);
 
   if (API) {

@@ -80,6 +80,12 @@ Na ficha, campo opcional `cerebro`:
 | `cpa_alvo` | o preço da oferta (`oferta.valor`) | Custo por compra que ainda dá lucro. No low ticket, empatar no front é o normal: o lucro vem dos order bumps e do upsell. Se o seu ticket médio é maior que o front, suba a meta. |
 | `gasto_minimo` | 2 × `cpa_alvo` | Quanto um gancho precisa gastar antes de ser julgado. |
 
+## No Obsidian
+
+Com um cofre do Obsidian configurado, o cérebro também vira notas: uma por gancho e por ângulo, um resumo por
+produto e um Painel. As lições passam a ser escritas na nota **Lições** do cofre, e a caixinha **aprovado** de cada
+gancho decide o que entra nos lotes. Veja [obsidian.md](obsidian.md).
+
 ## O que a criação faz com o cérebro
 
 `npm run criar` inclui no pedido, quando o cérebro tem algo:
@@ -87,7 +93,7 @@ Na ficha, campo opcional `cerebro`:
 - até 5 ganchos vencedores ou promissores, para explorar a **mecânica** com palavras novas;
 - até 5 perdedores, para evitar a mesma mecânica e a mesma dor;
 - a ordem dos tipos de gancho, das bases e dos níveis de consciência pelo CPA (só os que já gastaram o mínimo);
-- todas as lições de `licoes.md`;
+- todas as lições de `licoes.md` e da nota Lições do Obsidian;
 - o pedido para que pelo menos um ângulo explore algo ainda não testado, para o cérebro continuar aprendendo.
 
 As regras de sempre continuam valendo: nada de repetir ganchos já usados, fatos só da ficha, restrições respeitadas.

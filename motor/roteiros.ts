@@ -7,6 +7,8 @@
  *            Sem ela, usa a criação mais recente; se não houver nenhuma, usa os "angulos" da ficha.
  *            Só entram ângulos e ganchos com "aprovado" diferente de false.
  *
+ * Com o Obsidian (docs/obsidian.md), vale o "aprovado" das notas de ganchos e ângulos do cofre.
+ *
  * Para cada ângulo × gancho × fórmula × formato, escreve em <saida>/<lote>/<variação>/:
  *   variacao.json  — cenas resolvidas (entrada do render)
  *   roteiro.md     — narração para gravar ou gerar a voz
@@ -17,6 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Formato, Tema } from "../src/tipos";
 import { carregarFormulas, montarCenas, narracaoDe, produtoDoAngulo, RAIZ, segundosEstimados } from "./montar";
+import { sincronizar } from "./obsidian";
 import { args, contarPalavras, lerJSON, preencher, salvarJSON, slug } from "./util";
 
 const a = args();
@@ -30,6 +33,9 @@ const formatos = (a.formatos ?? produto.formatos?.join(",") ?? "9x16").split(","
 const todasFormulas = carregarFormulas();
 const escolhidas = a.formulas ? todasFormulas.filter((f: any) => a.formulas.split(",").includes(f.id)) : todasFormulas.filter((f: any) => (produto.formulas ?? [f.id]).includes(f.id));
 const modeloLegenda = lerJSON(path.join(RAIZ, "legendas", "padrao.json"));
+
+// Com o Obsidian configurado, as caixinhas "aprovado" do cofre valem antes de montar o lote.
+sincronizar(pastaProduto, produto, a.cofre);
 
 // De onde vêm os ângulos: a criação pedida, a mais recente, ou a própria ficha.
 const pastaCriacoes = path.join(pastaProduto, "criacoes");

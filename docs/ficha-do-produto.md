@@ -21,6 +21,7 @@ Há um exemplo completo, de um produto fictício, em [`produtos/exemplo/produto.
 | `ritmo_fala` | Palavras por segundo da narração, medido num criativo aprovado (padrão 2,8). Usado para estimar a duração e o limite de palavras. |
 | `chamada_publico` | Como o anúncio chama o público logo no começo, por exemplo `["nutricionista", "nutri"]`. A criação recusa gancho que não traga um desses nomes nas primeiras palavras da fala e nas primeiras linhas da tela. |
 | `cerebro` | Metas para julgar os resultados: `{ "cpa_alvo": 35, "gasto_minimo": 70 }`. Padrão: o preço da oferta e o dobro dele. Veja [cerebro.md](cerebro.md). |
+| `obsidian` | `{ "cofre": "../../cofre" }`: pasta do cofre do Obsidian, relativa à pasta do produto. Veja [obsidian.md](obsidian.md). |
 | `nucleo_aprovado` | `true` quando o produto já tem um corpo de anúncio que funciona. Mecanismo, entregáveis, slogan e CTA ficam fixos (vêm da ficha) e a criação varia só o começo: ângulo, gancho, promessa e número. Assim se testa gancho contra o mesmo corpo. |
 
 ## Ângulos (`angulos[]`)

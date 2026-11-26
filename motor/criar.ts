@@ -19,6 +19,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { paraCriacao } from "./cerebro";
+import { sincronizar } from "./obsidian";
 import { lerReferencias } from "./referencias";
 import { carregarFormulas, montarCenas, narracaoDe, segundosEstimados } from "./montar";
 import { args, contarPalavras, lerJSON, salvarJSON, slug } from "./util";
@@ -326,10 +327,13 @@ async function main() {
     const r = Resposta.parse(lerJSON(path.resolve(a.importar)));
     const problemas = validar(r);
     salvar(r, a.modelo ?? "importado", problemas);
+    sincronizar(pastaProduto, produto, a.cofre);
     return;
   }
   const { r, modelo, problemas } = await gerarPelaApi();
   salvar(r, modelo, problemas);
+  // Com o Obsidian configurado, os ganchos novos aparecem no cofre para aprovar ou reprovar.
+  sincronizar(pastaProduto, produto, a.cofre);
 }
 
 main().catch((err) => {

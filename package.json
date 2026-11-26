@@ -14,7 +14,8 @@
     "coletar": "tsx motor/coletar.ts",
     "radar": "tsx motor/radar.ts",
     "resultados": "tsx motor/resultados.ts",
-    "cerebro": "tsx motor/cerebro.ts"
+    "cerebro": "tsx motor/cerebro.ts",
+    "obsidian": "tsx motor/obsidian.ts"
   },
   "license": "MIT",
   "dependencies": {

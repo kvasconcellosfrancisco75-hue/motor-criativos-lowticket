@@ -16,6 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { carregarFormulas } from "./montar";
 import { lerCerebro, type Numeros, type Resultado, resumo, salvarCerebro, pastaCerebro } from "./cerebro";
+import { sincronizar } from "./obsidian";
 import { args, lerJSON, slug } from "./util";
 
 const sem = (t: string) => t.replace(/^﻿/, "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -163,4 +164,5 @@ if (require.main === module) {
   console.log(`${casadas} anúncio(s) casados com ${Object.keys(novos).length} variação(ões); ${semPar.length} sem par. Cérebro: ${path.join(pastaCerebro(pasta), "cerebro.md")}`);
   for (const s of semPar.slice(0, 10)) console.log(`  ? ${s}`);
   if (semPar.length) console.log("  Dica: o nome do anúncio precisa conter o nome da pasta da variação (veja variacoes.csv do lote).");
+  sincronizar(pasta, produto, a.cofre);
 }

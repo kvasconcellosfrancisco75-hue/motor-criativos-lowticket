@@ -20,6 +20,7 @@ fatos do produto ─► criação (ângulos, ganchos, copy) ─► fórmulas ─
 | 5. Produção | `motor/` | Gera o lote, prepara a voz, sincroniza as cenas com a fala, renderiza e confere. |
 | 6. Saída | `saida/<produto>/<lote>/` | Um vídeo por variação e formato, `roteiro.md`, `legenda.txt`, `quadros.png` e a planilha `variacoes.csv`. |
 | 7. Cérebro | `<produto>/cerebro/` | Os resultados dos anúncios no ar e as suas lições. A próxima criação parte do que vendeu e evita o que não vendeu. Veja [docs/cerebro.md](docs/cerebro.md). |
+| 8. Obsidian | seu cofre, pasta `Motor/` | O cérebro e o radar como notas ligadas. Você aprova ganchos e escreve lições no Obsidian (até no celular) e o motor lê de volta. Veja [docs/obsidian.md](docs/obsidian.md). |
 
 ### Fórmulas incluídas
 
@@ -59,6 +60,9 @@ npm run conferir -- --lote saida/exemplo-receitas/lote-01
 # 6. Depois que os anúncios rodarem: importar os resultados para o cérebro (veja docs/cerebro.md)
 npm run resultados -- --produto produtos/exemplo --csv export-do-gerenciador.csv
 npm run cerebro -- --produto produtos/exemplo --licao "o que você aprendeu"
+
+# (recomendado) Tudo isso dentro do Obsidian: veja docs/obsidian.md
+OBSIDIAN_COFRE=~/MeuCofre npm run obsidian -- --produto produtos/exemplo
 ```
 
 Sem narração, o motor estima o tempo de cada cena pelo texto (cerca de 2,8 palavras por segundo). Serve

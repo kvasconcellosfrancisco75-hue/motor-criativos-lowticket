@@ -7,3 +7,4 @@ produtos-privados
 radar/dados
 # resultados de anúncios (cérebro) nunca vão para o repositório público
 produtos/*/cerebro
+cofre

@@ -33,6 +33,7 @@ roteiro sincronizado com a voz e vídeos renderizados em lote. O catálogo vira 
 | Checagem de termos sensíveis antes de subir | falta | fase 2 |
 | Coleta diária automática e app no telefone | **existe** | `motor/radar.ts`, `app/`, [app.md](app.md) |
 | Resultados dos anúncios voltando para a criação (cérebro) | **existe** | `motor/resultados.ts`, `motor/cerebro.ts`, [cerebro.md](cerebro.md) |
+| Cérebro e radar no Obsidian, com aprovação e lições de volta | **existe** | `motor/obsidian.ts`, `motor/cofre.ts`, [obsidian.md](obsidian.md) |
 
 ## Fase 1 — Radar e análise (continua CLI, sem servidor)
 
