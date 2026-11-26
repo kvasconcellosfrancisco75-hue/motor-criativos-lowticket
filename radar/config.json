@@ -37,6 +37,7 @@
     "comunidade exclusiva"
   ],
   "tentativas": 8,
+  "min_anuncios": 30,
   "pausa_ms": 6000,
   "verificar_paginas": 40,
   "preco_da_pagina_sem_checkout": false,

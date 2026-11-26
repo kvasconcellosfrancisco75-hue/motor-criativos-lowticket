@@ -14,7 +14,7 @@ concurrency:
 jobs:
   radar:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
 
@@ -29,11 +29,18 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.63.0
           npx playwright install --with-deps chromium
 
-      - name: Coleta
+      # Quando o Facebook bloqueia as buscas, a coleta sai vazia e o radar falha de propósito: tenta até 3 vezes.
+      - name: Coleta (até 3 tentativas)
         env:
           RADAR_API: ${{ secrets.RADAR_API }}
           RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
-        run: npm run radar -- --saida "$RUNNER_TEMP/radar"
+        run: |
+          for t in 1 2 3; do
+            npm run radar -- --saida "$RUNNER_TEMP/radar" && exit 0
+            echo "Tentativa $t falhou."
+            if [ $t -lt 3 ]; then sleep 1200; fi
+          done
+          exit 1
 
       - name: Avisar o app se falhou
         if: failure()
@@ -44,4 +51,4 @@ jobs:
         run: |
           curl -sS -X POST "$RADAR_API/api/coleta/erro" \
             -H "Authorization: Bearer $RADAR_TOKEN" -H "Content-Type: application/json" \
-            --data "{\"mensagem\":\"A execução no GitHub Actions falhou. Log: $LOG\"}"
+            --data "{\"mensagem\":\"A coleta falhou nas 3 tentativas (o Facebook pode ter bloqueado as buscas). Log: $LOG\"}"

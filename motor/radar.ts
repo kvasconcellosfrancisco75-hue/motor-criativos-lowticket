@@ -842,6 +842,14 @@ async function main() {
     brutos = r.itens;
     falhasBusca = r.falhas;
   }
+  // Coleta vazia (ou quase) é bloqueio do Facebook, não um dia sem ofertas: falha sem publicar nada,
+  // para o workflow tentar de novo e o app continuar mostrando a última coleta boa.
+  const minAnuncios = Number(cfg.min_anuncios ?? 30);
+  if (!a["de-arquivo"] && brutos.length < minAnuncios) {
+    const msg = `Só ${brutos.length} anúncios coletados (mínimo ${minAnuncios}): o Facebook bloqueou as buscas (${falhasBusca} de ${termos.length} sem resultado).`;
+    aviso("descoberta", `${msg} Tentando de novo mais tarde.`);
+    throw new Error(msg);
+  }
   if (!a["de-arquivo"]) salvarJSON(path.join(pastaColetas, `${diaHoje}.busca.json`), brutos);
 
   const descartes = new Map<string, number>();
